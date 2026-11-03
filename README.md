@@ -1,59 +1,97 @@
-# DeveloperPortal
+# Client-Developer Communication & Project Management Platform
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.6.
+Clients create projects and requirements; the dev team reviews them, plans tasks, and
+reports progress. Clients follow progress, raise issues, discuss in comments, exchange
+files, and sign off on delivery.
 
-## Development server
+This repository contains the two applications of the platform:
 
-To start a local development server, run:
-
-```bash
-ng serve
+```
+backend/    Node.js + Express + TypeScript + Mongoose API
+frontend/   Angular (standalone, SCSS) client
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Prerequisites
 
-## Code scaffolding
+- Node.js 22+ and npm
+- MongoDB running locally (or a MongoDB connection string)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Backend
 
 ```bash
-ng generate --help
+cd backend
+npm install
+cp .env.example .env      # Windows: copy .env.example .env
+npm run dev               # starts http://localhost:5000
 ```
 
-## Building
+Useful commands:
 
-To build the project run:
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the API in watch mode (ts-node-dev) |
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm start` | Run the compiled API |
+| `npm test` | Run Jest tests |
+| `npm run seed` | Connect to MongoDB and sync model indexes |
+| `npm run lint` | Run ESLint |
+
+Health check: `GET http://localhost:5000/api/health`
+
+```json
+{ "success": true, "data": { "status": "ok", "timestamp": "..." }, "message": "API is healthy" }
+```
+
+Environment variables are validated at startup (`backend/src/config/env.ts`). Update
+`backend/.env` before running the server. `.env` is never committed.
+
+## Frontend
 
 ```bash
-ng build
+cd frontend
+npm install
+npm start                 # starts http://localhost:4200
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Useful commands:
 
-## Running unit tests
+| Command | Description |
+| --- | --- |
+| `npm start` | Start the Angular dev server |
+| `npm run build` | Production build into `dist/` |
+| `npm test -- --watch=false` | Run unit tests once |
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+The API and socket URLs live in `frontend/src/environments/`:
 
-```bash
-ng test
+```ts
+apiUrl: 'http://localhost:5000/api'
+socketUrl: 'http://localhost:5000'
 ```
 
-## Running end-to-end tests
+There is no dev-server proxy: the browser calls the backend directly at
+`http://localhost:5000`, and the backend allows the Angular origin via CORS
+(`CLIENT_URL`, credentials enabled).
 
-For end-to-end (e2e) testing, run:
+## Project structure
 
-```bash
-ng e2e
 ```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+backend/
+  src/
+    config/      env validation, database connection
+    models/      Mongoose models
+    controllers/ HTTP controllers
+    routes/      Express routers (mounted at /api)
+    middleware/  auth, roles, validation, error handling
+    services/    business logic
+    sockets/     Socket.IO handlers
+    utils/       shared helpers and seed scripts
+    types/       shared TypeScript types
+  uploads/       private uploaded files (not committed)
+frontend/
+  src/app/
+    core/        singletons: auth, HTTP interceptors, guards
+    shared/      reusable components, directives, pipes
+    features/    auth, dashboard, projects, requirements, tasks,
+                 issues, communication, files, admin
+  src/environments/
+```

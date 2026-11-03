@@ -1,0 +1,10 @@
+process.env.NODE_ENV = 'test';
+process.env.PORT = '5000';
+process.env.MONGO_URI = 'mongodb://127.0.0.1:27017/project-platform-test';
+process.env.JWT_SECRET = 'test-jwt-secret-that-is-at-least-32-characters-long';
+process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-that-is-at-least-32-characters-long';
+process.env.CLIENT_URL = 'http://localhost:4200';
+process.env.SMTP_HOST = 'localhost';
+process.env.SMTP_PORT = '1025';
+process.env.SMTP_USER = 'test-user';
+process.env.SMTP_PASS = 'test-password';
