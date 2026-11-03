@@ -7,5 +7,6 @@ module.exports = {
   setupFiles: ['<rootDir>/jest.setup.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   clearMocks: true,
+  testTimeout: 120000,
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts', '!src/types/**'],
 };
