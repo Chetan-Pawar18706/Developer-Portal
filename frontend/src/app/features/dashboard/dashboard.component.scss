@@ -1,0 +1,132 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mat-sys-primary);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0.4rem 0 0;
+  max-width: 42rem;
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.5;
+}
+
+.role-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.role-hint {
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 1rem;
+}
+
+.summary-card {
+  border-radius: 0.9rem;
+  background: var(--mat-sys-surface-container-low);
+}
+
+.summary-icon {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--mat-sys-primary) 12%, transparent);
+  color: var(--mat-sys-primary);
+  margin-bottom: 0.9rem;
+}
+
+.summary-value {
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.summary-label {
+  margin-top: 0.45rem;
+  font-weight: 500;
+}
+
+.summary-hint {
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.dashboard-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 1rem;
+}
+
+.panel {
+  border-radius: 0.9rem;
+  background: var(--mat-sys-surface-container-low);
+}
+
+.placeholder-row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 0.75rem 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.placeholder-row mat-icon {
+  color: var(--mat-sys-primary);
+}
+
+.placeholder-row strong {
+  color: var(--mat-sys-on-surface);
+  font-weight: 600;
+}
+
+.placeholder-row p {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding-top: 0.75rem;
+}
+
+.quick-actions a {
+  gap: 0.4rem;
+}

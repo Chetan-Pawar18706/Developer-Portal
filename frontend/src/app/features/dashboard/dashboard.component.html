@@ -1,0 +1,86 @@
+<section class="dashboard">
+  <header class="dashboard-header">
+    <div>
+      <p class="eyebrow">Dashboard</p>
+      <h1>Welcome back, {{ firstName() }}</h1>
+      <p class="subtitle">
+        This is your workspace overview. Project activity, tasks and approvals will appear here.
+      </p>
+    </div>
+
+    <div class="role-summary">
+      <app-status-badge status="active" [label]="roleLabel()" />
+      <span class="role-hint">Signed in as {{ user()?.email }}</span>
+    </div>
+  </header>
+
+  <div class="summary-grid">
+    @for (card of cards; track card.label) {
+      <mat-card appearance="outlined" class="summary-card">
+        <mat-card-content>
+          <div class="summary-icon">
+            <mat-icon>{{ card.icon }}</mat-icon>
+          </div>
+          <div class="summary-value">—</div>
+          <div class="summary-label">{{ card.label }}</div>
+          <div class="summary-hint">{{ card.hint }}</div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </div>
+
+  <div class="dashboard-columns">
+    <mat-card appearance="outlined" class="panel">
+      <mat-card-header>
+        <mat-card-title>Recent activity</mat-card-title>
+        <mat-card-subtitle>Updates from across your projects</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="placeholder-row">
+          <mat-icon>timeline</mat-icon>
+          <div>
+            <strong>Nothing to show yet</strong>
+            <p>Activity will appear once projects and tasks are created.</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="panel">
+      <mat-card-header>
+        <mat-card-title>Quick actions</mat-card-title>
+        <mat-card-subtitle>Common destinations for your role</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="quick-actions">
+        @if (role() === 'client') {
+          <a mat-stroked-button routerLink="/projects">
+            <mat-icon>folder_open</mat-icon>
+            View projects
+          </a>
+        }
+        @if (role() === 'developer') {
+          <a mat-stroked-button routerLink="/tasks">
+            <mat-icon>task_alt</mat-icon>
+            My tasks
+          </a>
+        }
+        @if (role() === 'pm' || role() === 'admin') {
+          <a mat-stroked-button routerLink="/projects">
+            <mat-icon>folder_open</mat-icon>
+            Manage projects
+          </a>
+        }
+        <a mat-stroked-button routerLink="/issues">
+          <mat-icon>bug_report</mat-icon>
+          Review issues
+        </a>
+        <ng-container *appHasRole="'admin'">
+          <a mat-stroked-button routerLink="/admin/users">
+            <mat-icon>group</mat-icon>
+            Manage users
+          </a>
+        </ng-container>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</section>

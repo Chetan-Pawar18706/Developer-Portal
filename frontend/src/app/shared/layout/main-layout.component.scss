@@ -1,0 +1,217 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.app-shell {
+  height: 100dvh;
+  background: var(--mat-sys-surface);
+}
+
+.app-sidenav {
+  width: 16.5rem;
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.75rem;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.brand-copy strong {
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.brand-copy small {
+  font-size: 0.72rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.nav-list {
+  padding: 0.75rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nav-list a {
+  border-radius: 0.65rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.nav-list a mat-icon {
+  color: inherit;
+}
+
+.nav-list a.active-link {
+  background: color-mix(in srgb, var(--mat-sys-primary) 14%, transparent);
+  color: var(--mat-sys-primary);
+}
+
+.nav-list a.active-link mat-icon {
+  color: var(--mat-sys-primary);
+}
+
+.sidenav-footer {
+  margin-top: auto;
+  padding: 1rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.footer-label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mat-sys-on-surface-variant);
+  margin-bottom: 0.6rem;
+}
+
+.footer-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.footer-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.footer-copy strong {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footer-copy small {
+  font-size: 0.72rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 4rem;
+  padding-inline: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--mat-sys-surface) 88%, transparent);
+  backdrop-filter: blur(0.75rem);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.menu-button {
+  flex-shrink: 0;
+}
+
+.page-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-left: 0.25rem;
+  white-space: nowrap;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.global-search {
+  width: min(20rem, 32vw);
+  --mat-form-field-container-height: 2.6rem;
+  --mat-form-field-container-vertical-padding: 0.55rem;
+}
+
+.global-search mat-icon[matPrefix] {
+  margin-inline: 0.5rem 0.35rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.icon-button {
+  position: relative;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--mat-sys-error);
+  border: 2px solid var(--mat-sys-surface);
+}
+
+.profile-button {
+  margin-left: 0.15rem;
+}
+
+.profile-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  min-width: 13rem;
+}
+
+.profile-summary strong {
+  font-size: 0.9rem;
+}
+
+.profile-email {
+  font-size: 0.78rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.profile-role {
+  margin-top: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mat-sys-primary);
+}
+
+.app-content {
+  padding: clamp(1rem, 2.2vw, 2rem);
+  max-width: 90rem;
+  margin-inline: auto;
+}
+
+@media (max-width: 45rem) {
+  .global-search {
+    display: none;
+  }
+
+  .page-title {
+    font-size: 0.95rem;
+  }
+}

@@ -1,0 +1,127 @@
+<mat-sidenav-container class="app-shell" [class.is-handset]="isHandset()">
+  <mat-sidenav
+    #sidenav
+    class="app-sidenav"
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="sidenavOpen()"
+    (openedChange)="sidenavOpen.set($event)"
+  >
+    <div class="brand">
+      <span class="brand-mark">
+        <mat-icon>hub</mat-icon>
+      </span>
+      <div class="brand-copy">
+        <strong>DevPortal</strong>
+        <small>Project workspace</small>
+      </div>
+    </div>
+
+    <nav aria-label="Main navigation">
+      <mat-nav-list class="nav-list">
+        @for (item of navigation(); track item.route) {
+          <a
+            mat-list-item
+            [routerLink]="item.route"
+            routerLinkActive="active-link"
+            [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+            (click)="onNavigate()"
+          >
+            <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+            <span matListItemTitle>{{ item.label }}</span>
+          </a>
+        }
+      </mat-nav-list>
+    </nav>
+
+    <div class="sidenav-footer">
+      <span class="footer-label">Signed in as</span>
+      <div class="footer-user">
+        <app-user-avatar
+          [name]="user()?.name ?? 'User'"
+          [avatar]="user()?.avatar ?? null"
+          size="sm"
+        />
+        <div class="footer-copy">
+          <strong>{{ user()?.name }}</strong>
+          <small>{{ roleLabel() }}</small>
+        </div>
+      </div>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="app-toolbar">
+      <button
+        mat-icon-button
+        type="button"
+        class="menu-button"
+        aria-label="Toggle navigation"
+        (click)="toggleSidenav()"
+      >
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <span class="page-title">{{ pageTitle() }}</span>
+
+      <span class="spacer"></span>
+
+      <mat-form-field class="global-search" appearance="outline" subscriptSizing="dynamic">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput placeholder="Search workspace" aria-label="Search workspace" />
+      </mat-form-field>
+
+      <button
+        mat-icon-button
+        type="button"
+        class="icon-button"
+        matTooltip="Notifications"
+        aria-label="Notifications"
+      >
+        <mat-icon>notifications</mat-icon>
+        <span class="notification-dot" aria-hidden="true"></span>
+      </button>
+
+      <button
+        mat-icon-button
+        type="button"
+        class="icon-button"
+        [matTooltip]="theme.dark() ? 'Use light theme' : 'Use dark theme'"
+        [attr.aria-label]="theme.dark() ? 'Use light theme' : 'Use dark theme'"
+        (click)="theme.toggle()"
+      >
+        <mat-icon>{{ theme.dark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+
+      <button
+        mat-icon-button
+        type="button"
+        class="profile-button"
+        [matMenuTriggerFor]="profileMenu"
+        aria-label="Open profile menu"
+      >
+        <app-user-avatar
+          [name]="user()?.name ?? 'User'"
+          [avatar]="user()?.avatar ?? null"
+          size="sm"
+        />
+      </button>
+
+      <mat-menu #profileMenu="matMenu" xPosition="before" class="profile-menu">
+        <div class="profile-summary">
+          <strong>{{ user()?.name }}</strong>
+          <span class="profile-email">{{ user()?.email }}</span>
+          <span class="profile-role">{{ roleLabel() }}</span>
+        </div>
+        <mat-divider />
+        <button mat-menu-item type="button" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Log out</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+
+    <main class="app-content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

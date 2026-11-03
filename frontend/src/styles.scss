@@ -1,4 +1,69 @@
-/* Global styles for the Developer Portal */
+@use '@angular/material' as mat;
+
+html {
+  color-scheme: light;
+
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$violet-palette,
+        theme-type: color-scheme,
+      ),
+      typography: (
+        plain-family: (
+          'Roboto',
+          'Helvetica Neue',
+          sans-serif,
+        ),
+        brand-family: (
+          'Roboto',
+          'Helvetica Neue',
+          sans-serif,
+        ),
+      ),
+      density: 0,
+    )
+  );
+}
+
+html.dark-theme {
+  color-scheme: dark;
+}
+
+:root {
+  --status-done: #1b7f4d;
+  --status-done-bg: #e6f6ec;
+  --status-done-border: #b7e2c8;
+  --status-review: #8a5300;
+  --status-review-bg: #fff4d6;
+  --status-review-border: #f0d38a;
+  --status-blocked: #b3261e;
+  --status-blocked-bg: #fdeceb;
+  --status-blocked-border: #f5c4c0;
+  --status-draft: #5b6470;
+  --status-draft-bg: #eef0f3;
+  --status-draft-border: #d4d8de;
+}
+
+html.dark-theme {
+  --status-done: #7fe0aa;
+  --status-done-bg: rgb(46 125 50 / 22%);
+  --status-done-border: rgb(127 224 170 / 35%);
+  --status-review: #ffd27f;
+  --status-review-bg: rgb(176 106 0 / 22%);
+  --status-review-border: rgb(255 210 127 / 35%);
+  --status-blocked: #ffb4ab;
+  --status-blocked-bg: rgb(179 38 30 / 24%);
+  --status-blocked-border: rgb(255 180 171 / 35%);
+  --status-draft: #c3c8d0;
+  --status-draft-bg: rgb(120 130 145 / 20%);
+  --status-draft-border: rgb(195 200 208 / 30%);
+}
+
+* {
+  box-sizing: border-box;
+}
 
 html,
 body {
@@ -8,4 +73,178 @@ body {
 body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--mat-sys-primary);
+}
+
+/* Shared auth screens */
+.auth-page {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 2rem 1rem;
+  background:
+    radial-gradient(
+      circle at 12% 12%,
+      color-mix(in srgb, var(--mat-sys-primary) 16%, transparent),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 88% 85%,
+      color-mix(in srgb, var(--mat-sys-tertiary) 14%, transparent),
+      transparent 42%
+    ),
+    var(--mat-sys-surface);
+}
+
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: min(26rem, 100%);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.auth-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+
+.auth-card {
+  border-radius: 1rem;
+  background: var(--mat-sys-surface-container-low);
+  overflow: hidden;
+}
+
+.auth-card mat-card-content {
+  padding: 1.75rem;
+}
+
+.auth-card h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.55rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+  margin: 0 0 1.25rem;
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.5;
+}
+
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.submit-button {
+  height: 2.75rem;
+  margin-top: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+
+.form-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--status-blocked-border);
+  border-radius: 0.6rem;
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.form-error-banner mat-icon {
+  font-size: 1.15rem;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  margin-top: 0.05rem;
+}
+
+.success-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0 1.25rem;
+  text-align: center;
+}
+
+.success-panel > mat-icon {
+  width: 3rem;
+  height: 3rem;
+  font-size: 3rem;
+  color: var(--mat-sys-primary);
+}
+
+.success-panel h1 {
+  margin: 0;
+}
+
+.success-panel p {
+  margin: 0 0 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.55;
+}
+
+.auth-footer {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 1rem;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  font-size: 0.85rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.auth-footer a {
+  color: var(--mat-sys-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Snackbar */
+.app-snackbar-error {
+  --mat-snack-bar-container-color: var(--mat-sys-error-container);
+  --mat-snack-bar-supporting-text-color: var(--mat-sys-on-error-container);
+  --mat-snack-bar-button-color: var(--mat-sys-error);
 }
