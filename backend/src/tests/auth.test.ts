@@ -1,48 +1,16 @@
 import request from 'supertest';
 import { app } from '../app';
-import {
-  User,
-  hashPassword,
-  type UserDocument,
-  type UserRole,
-} from '../models/user.model';
+import { User } from '../models/user.model';
 import { REFRESH_COOKIE_NAME } from '../utils/cookies';
 import { hashToken } from '../utils/token';
+import { createUser, defaultPassword } from './factories';
 import { clearTestDatabase, startTestDatabase, stopTestDatabase } from './test-db';
-
-const defaultPassword = 'Password123!';
 
 const newUser = {
   name: 'Jane Client',
   email: 'jane@example.com',
   password: defaultPassword,
 };
-
-interface CreateUserOptions {
-  name?: string;
-  email?: string;
-  password?: string;
-  role?: UserRole;
-  isActive?: boolean;
-}
-
-async function createUser(options: CreateUserOptions = {}): Promise<UserDocument> {
-  const {
-    name = 'Test User',
-    email = 'test@example.com',
-    password = defaultPassword,
-    role = 'client',
-    isActive = true,
-  } = options;
-
-  return User.create({
-    name,
-    email,
-    passwordHash: await hashPassword(password),
-    role,
-    isActive,
-  });
-}
 
 function getRefreshCookie(response: request.Response): string {
   const setCookie: unknown = response.headers['set-cookie'];

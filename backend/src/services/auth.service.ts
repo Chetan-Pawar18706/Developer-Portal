@@ -41,7 +41,7 @@ export interface LoginInput {
   password: string;
 }
 
-function toPublicUser(user: UserDocument): PublicUser {
+export function toPublicUser(user: UserDocument): PublicUser {
   return {
     id: user.id,
     name: user.name,

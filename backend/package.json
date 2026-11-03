@@ -10,7 +10,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest --runInBand",
-    "seed": "ts-node src/utils/seed.ts",
+    "seed": "ts-node src/scripts/seed.ts",
     "lint": "eslint ."
   },
   "keywords": [],
