@@ -3,13 +3,9 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, firstValueFrom, map, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import type { ApiResponse } from '../models/api.model';
-import type {
-  AuthResponse,
-  LoginRequest,
-  RegisterRequest,
-  Role,
-  User,
-} from '../models/user.model';
+import type { AuthResponse, LoginRequest, RegisterRequest, Role, User } from '../models/user.model';
+
+const SESSION_HINT_KEY = 'project-platform.has-session';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -30,30 +26,24 @@ export class AuthService {
   });
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.http
-      .post<ApiResponse<AuthResponse>>(`${this.baseUrl}/login`, credentials)
-      .pipe(
-        tap((response) => this.setSession(response.data)),
-        map((response) => response.data),
-      );
+    return this.http.post<ApiResponse<AuthResponse>>(`${this.baseUrl}/login`, credentials).pipe(
+      tap((response) => this.setSession(response.data)),
+      map((response) => response.data),
+    );
   }
 
   register(input: RegisterRequest): Observable<AuthResponse> {
-    return this.http
-      .post<ApiResponse<AuthResponse>>(`${this.baseUrl}/register`, input)
-      .pipe(
-        tap((response) => this.setSession(response.data)),
-        map((response) => response.data),
-      );
+    return this.http.post<ApiResponse<AuthResponse>>(`${this.baseUrl}/register`, input).pipe(
+      tap((response) => this.setSession(response.data)),
+      map((response) => response.data),
+    );
   }
 
   refresh(): Observable<AuthResponse> {
-    return this.http
-      .post<ApiResponse<AuthResponse>>(`${this.baseUrl}/refresh`, {})
-      .pipe(
-        tap((response) => this.setSession(response.data)),
-        map((response) => response.data),
-      );
+    return this.http.post<ApiResponse<AuthResponse>>(`${this.baseUrl}/refresh`, {}).pipe(
+      tap((response) => this.setSession(response.data)),
+      map((response) => response.data),
+    );
   }
 
   loadMe(): Observable<User> {
@@ -91,7 +81,7 @@ export class AuthService {
    * initialization, before the router evaluates any guards.
    */
   async restoreSession(): Promise<void> {
-    if (this.currentUserSignal() !== null) {
+    if (this.currentUserSignal() !== null || !this.hasSessionHint()) {
       return;
     }
 
@@ -105,10 +95,40 @@ export class AuthService {
   clearSession(): void {
     this.accessTokenSignal.set(null);
     this.currentUserSignal.set(null);
+    this.clearSessionHint();
   }
 
   private setSession(response: AuthResponse): void {
     this.accessTokenSignal.set(response.accessToken);
     this.currentUserSignal.set(response.user);
+    this.setSessionHint();
+  }
+
+  private hasSessionHint(): boolean {
+    try {
+      return typeof localStorage !== 'undefined' && localStorage.getItem(SESSION_HINT_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  private setSessionHint(): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(SESSION_HINT_KEY, '1');
+      }
+    } catch {
+      // Storage can be unavailable in private or restricted browsing contexts.
+    }
+  }
+
+  private clearSessionHint(): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(SESSION_HINT_KEY);
+      }
+    } catch {
+      // Storage can be unavailable in private or restricted browsing contexts.
+    }
   }
 }

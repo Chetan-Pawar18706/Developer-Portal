@@ -32,6 +32,7 @@ describe('AuthService', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
+    localStorage.setItem('project-platform.has-session', '1');
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -42,6 +43,7 @@ describe('AuthService', () => {
 
   afterEach(() => {
     httpMock.verify();
+    localStorage.clear();
   });
 
   it('keeps the access token in memory after login', () => {
@@ -109,6 +111,15 @@ describe('AuthService', () => {
 
     expect(service.isLoggedIn()).toBe(true);
     expect(service.accessToken()).toBe('access-token');
+  });
+
+  it('does not request a refresh when there is no session hint', async () => {
+    localStorage.removeItem('project-platform.has-session');
+
+    await service.restoreSession();
+
+    httpMock.expectNone(`${environment.apiUrl}/auth/refresh`);
+    expect(service.isLoggedIn()).toBe(false);
   });
 
   it('stays signed out when the refresh cookie is invalid', async () => {
