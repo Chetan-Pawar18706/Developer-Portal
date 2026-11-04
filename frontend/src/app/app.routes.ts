@@ -105,15 +105,41 @@ export const routes: Routes = [
               },
               {
                 path: 'requirements',
-                data: {
-                  title: 'Requirements',
-                  icon: 'assignment',
-                  description: 'Project requirements will be managed here in the next part.',
-                },
-                loadComponent: () =>
-                  import('./shared/components/placeholder-page/placeholder-page.component').then(
-                    (module) => module.PlaceholderPageComponent,
-                  ),
+                children: [
+                  {
+                    path: '',
+                    pathMatch: 'full',
+                    loadComponent: () =>
+                      import('./features/requirements/requirement-list/requirement-list.component').then(
+                        (module) => module.RequirementListComponent,
+                      ),
+                  },
+                  {
+                    path: 'new',
+                    canActivate: [roleGuard(['admin', 'pm', 'client'])],
+                    data: { mode: 'create' },
+                    loadComponent: () =>
+                      import('./features/requirements/requirement-form/requirement-form.component').then(
+                        (module) => module.RequirementFormComponent,
+                      ),
+                  },
+                  {
+                    path: ':requirementId/edit',
+                    canActivate: [roleGuard(['admin', 'pm', 'client'])],
+                    data: { mode: 'edit' },
+                    loadComponent: () =>
+                      import('./features/requirements/requirement-form/requirement-form.component').then(
+                        (module) => module.RequirementFormComponent,
+                      ),
+                  },
+                  {
+                    path: ':requirementId',
+                    loadComponent: () =>
+                      import('./features/requirements/requirement-detail/requirement-detail.component').then(
+                        (module) => module.RequirementDetailComponent,
+                      ),
+                  },
+                ],
               },
               {
                 path: 'tasks',

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as projectController from '../controllers/project.controller';
+import * as requirementController from '../controllers/requirement.controller';
 import { allow } from '../middleware/allow';
 import { authenticate } from '../middleware/auth';
 import { projectAccess } from '../middleware/projectAccess';
@@ -14,6 +15,11 @@ import {
   updateProjectSchema,
   updateProjectStatusSchema,
 } from './project.schemas';
+import {
+  createRequirementSchema,
+  listRequirementsQuerySchema,
+  projectRequirementParamSchema,
+} from './requirement.schemas';
 
 export const projectRouter = Router();
 
@@ -30,6 +36,27 @@ projectRouter.post(
   allow('admin', 'pm', 'client'),
   validate({ body: createProjectSchema }),
   asyncHandler(projectController.createProject),
+);
+
+projectRouter.get(
+  '/:id/requirements',
+  validate({
+    params: projectRequirementParamSchema,
+    query: listRequirementsQuerySchema,
+  }),
+  projectAccess,
+  asyncHandler(requirementController.listProjectRequirements),
+);
+
+projectRouter.post(
+  '/:id/requirements',
+  allow('admin', 'pm', 'client'),
+  validate({
+    params: projectRequirementParamSchema,
+    body: createRequirementSchema,
+  }),
+  projectAccess,
+  asyncHandler(requirementController.createProjectRequirement),
 );
 
 projectRouter.get(

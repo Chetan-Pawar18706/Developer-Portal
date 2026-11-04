@@ -1,0 +1,158 @@
+.form-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 58rem;
+}
+
+.back-link {
+  align-self: flex-start;
+  margin-left: -0.75rem;
+}
+
+.page-header {
+  h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+  }
+
+  .subtitle {
+    max-width: 44rem;
+    margin: 0.35rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+    line-height: 1.5;
+  }
+}
+
+.loading-panel {
+  display: grid;
+  place-items: center;
+  min-height: 18rem;
+}
+
+.info-banner,
+.draft-banner,
+.error-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.7rem;
+  line-height: 1.4;
+
+  span {
+    flex: 1 1 18rem;
+  }
+}
+
+.info-banner {
+  border: 1px solid var(--status-review-border);
+  background: var(--status-review-bg);
+  color: var(--status-review);
+}
+
+.draft-banner {
+  border: 1px solid var(--status-done-border);
+  background: var(--status-done-bg);
+  color: var(--status-done);
+
+  button {
+    color: inherit;
+  }
+}
+
+.error-banner {
+  border: 1px solid var(--status-blocked-border);
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked);
+}
+
+.form-card {
+  border-radius: 0.9rem;
+}
+
+.requirement-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  padding-top: 0.35rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.rich-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-label {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.field-hint,
+.field-error {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.field-hint {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.field-error {
+  color: var(--mat-sys-error);
+}
+
+.form-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.autosave-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.78rem;
+
+  mat-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    font-size: 1.05rem;
+  }
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+@media (max-width: 40rem) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

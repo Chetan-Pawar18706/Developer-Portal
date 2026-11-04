@@ -33,7 +33,7 @@ Useful commands:
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Run the compiled API |
 | `npm test` | Run Jest tests |
-| `npm run seed` | Reset development data and seed demo users and projects |
+| `npm run seed` | Reset development data and seed demo users, projects, requirements and activity |
 | `npm run lint` | Run ESLint |
 
 Health check: `GET http://localhost:5000/api/health`
@@ -48,8 +48,8 @@ Environment variables are validated at startup (`backend/src/config/env.ts`). Up
 ### Demo accounts
 
 Run `npm run seed` in `backend/` to reset the development database and load the demo
-accounts, projects and activity history. The seed script is blocked when
-`NODE_ENV=production`.
+accounts, projects, requirements, version history and activity history. The seed script
+is blocked when `NODE_ENV=production`.
 
 | Name | Role | Email | Password |
 | --- | --- | --- | --- |
@@ -60,7 +60,26 @@ accounts, projects and activity history. The seed script is blocked when
 | Nikhil Sury | client | `nikhilsury@gmail.com` | `nikhil@123` |
 
 The seeded projects cover draft, submitted, active, on-hold and completed states so
-each role has something meaningful to review immediately.
+each role has something meaningful to review immediately. Requirements cover the full
+review lifecycle, including approvals, clarification requests, version history and a
+linked change request.
+
+### Requirements API
+
+All requirement endpoints require an authenticated user with access to the parent project.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/projects/:id/requirements` | List project requirements with search, status, priority, type and pagination |
+| `POST` | `/api/projects/:id/requirements` | Create a draft requirement (admin, pm or the client owner) |
+| `GET` | `/api/requirements/:id` | Get a requirement with versions and change-request link |
+| `PATCH` | `/api/requirements/:id` | Edit a requirement; each edit appends a version; approved requirements are locked |
+| `PATCH` | `/api/requirements/:id/status` | Move through the review workflow |
+| `POST` | `/api/requirements/:id/change-request` | Create a linked draft requirement from an approved requirement |
+
+Rich-text descriptions are sanitized on the server with `sanitize-html`. Status changes
+are role-aware: the client owner submits or approves, while PM/admin users start review,
+request clarification or reject. Clarification and rejection require a review note.
 
 ## Frontend
 

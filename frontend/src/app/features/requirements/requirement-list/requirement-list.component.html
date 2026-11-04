@@ -1,0 +1,171 @@
+<section class="requirements-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Project scope</p>
+      <h1>Requirements</h1>
+      <p class="subtitle">
+        Capture what the project must deliver, review each item and keep an audit trail.
+      </p>
+    </div>
+
+    @if (canCreate()) {
+      <button mat-flat-button type="button" routerLink="new">
+        <mat-icon>add</mat-icon>
+        New requirement
+      </button>
+    }
+  </header>
+
+  @if (store.error(); as error) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error }}</span>
+      <button mat-button type="button" (click)="store.reload()">Retry</button>
+    </div>
+  }
+
+  <mat-card appearance="outlined" class="filters-card">
+    <mat-card-content class="filters">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+        <mat-label>Search requirements</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [formControl]="searchControl" placeholder="Title or description" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Status</mat-label>
+        <mat-select
+          [value]="store.filters().status"
+          (selectionChange)="onStatusChange($event.value)"
+        >
+          <mat-option value="">All statuses</mat-option>
+          @for (status of statuses; track status) {
+            <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Priority</mat-label>
+        <mat-select
+          [value]="store.filters().priority"
+          (selectionChange)="onPriorityChange($event.value)"
+        >
+          <mat-option value="">All priorities</mat-option>
+          @for (priority of priorities; track priority) {
+            <mat-option [value]="priority">{{ priorityLabels[priority] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Type</mat-label>
+        <mat-select [value]="store.filters().type" (selectionChange)="onTypeChange($event.value)">
+          <mat-option value="">All types</mat-option>
+          @for (type of types; track type) {
+            <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <span class="result-count">
+        {{ store.total() }} {{ store.total() === 1 ? 'requirement' : 'requirements' }}
+      </span>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="results">
+    @if (store.loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    @if (store.loading() && store.entities().length === 0) {
+      <app-loading-skeleton [rows]="6" />
+    } @else if (store.entities().length === 0) {
+      <mat-card appearance="outlined">
+        <app-empty-state
+          icon="assignment"
+          title="No requirements found"
+          message="Create the first requirement or clear the filters to see the full project scope."
+        >
+          @if (canCreate()) {
+            <button mat-stroked-button type="button" routerLink="new">Create a requirement</button>
+          }
+        </app-empty-state>
+      </mat-card>
+    } @else {
+      <mat-card appearance="outlined" class="table-card">
+        <div class="table-scroll">
+          <table mat-table [dataSource]="store.entities()" class="requirements-table">
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>Requirement</th>
+              <td mat-cell *matCellDef="let requirement">
+                <div class="requirement-title">
+                  <strong>{{ requirement.title }}</strong>
+                  @if (requirement.changeRequestOf) {
+                    <span
+                      class="change-chip"
+                      [matTooltip]="'Change request for ' + requirement.changeRequestOf.title"
+                    >
+                      <mat-icon>alt_route</mat-icon>
+                      Change request
+                    </span>
+                  }
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="type">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let requirement">{{ typeLabel(requirement.type) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="priority">
+              <th mat-header-cell *matHeaderCellDef>Priority</th>
+              <td mat-cell *matCellDef="let requirement">
+                <span class="priority" [class]="'priority-' + requirement.priority">
+                  {{ priorityLabel(requirement.priority) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let requirement">
+                <app-status-badge
+                  [status]="requirement.status"
+                  [label]="statusLabel(requirement.status)"
+                />
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="updatedAt">
+              <th mat-header-cell *matHeaderCellDef>Updated</th>
+              <td mat-cell *matCellDef="let requirement">
+                {{ requirement.updatedAt | date: 'MMM d, y' }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayColumns"></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: displayColumns"
+              tabindex="0"
+              (click)="openRequirement(row)"
+              (keydown.enter)="openRequirement(row)"
+            ></tr>
+          </table>
+        </div>
+
+        <mat-paginator
+          [length]="store.total()"
+          [pageIndex]="store.filters().page - 1"
+          [pageSize]="store.filters().limit"
+          [pageSizeOptions]="[10, 20, 50]"
+          [showFirstLastButtons]="true"
+          (page)="onPage($event)"
+        />
+      </mat-card>
+    }
+  </div>
+</section>

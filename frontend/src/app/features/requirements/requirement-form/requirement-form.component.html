@@ -1,0 +1,135 @@
+<section class="form-page">
+  <a
+    mat-button
+    type="button"
+    [routerLink]="['/projects', projectId(), 'requirements']"
+    class="back-link"
+  >
+    <mat-icon>arrow_back</mat-icon>
+    Requirements
+  </a>
+
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Project scope</p>
+      <h1>{{ title() }}</h1>
+      <p class="subtitle">
+        Write the requirement in plain language, add testable acceptance criteria and save a working
+        draft as you go.
+      </p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-panel">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else {
+    @if (locked()) {
+      <div class="info-banner" role="status">
+        <mat-icon>lock</mat-icon>
+        <span>Approved requirements are locked. Raise a change request to propose new scope.</span>
+      </div>
+    }
+
+    @if (draftRestored()) {
+      <div class="draft-banner" role="status">
+        <mat-icon>history</mat-icon>
+        <span>A draft from this browser was restored. You can keep editing or discard it.</span>
+        <button mat-button type="button" (click)="discardDraft()">Discard draft</button>
+      </div>
+    }
+
+    @if (serverError(); as error) {
+      <div class="error-banner" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+    }
+
+    <mat-card appearance="outlined" class="form-card">
+      <mat-card-content>
+        <form [formGroup]="form" class="requirement-form" (ngSubmit)="submit()" novalidate>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Requirement title</mat-label>
+            <input matInput formControlName="title" placeholder="Customer can reset a password" />
+            @if (form.controls.title.touched && form.controls.title.hasError('required')) {
+              <mat-error>A requirement title is required.</mat-error>
+            }
+            @if (form.controls.title.touched && form.controls.title.hasError('minlength')) {
+              <mat-error>Use at least 3 characters.</mat-error>
+            }
+          </mat-form-field>
+
+          <div class="rich-field">
+            <label class="field-label">Description</label>
+            <app-rich-text-editor
+              formControlName="description"
+              placeholder="Describe the user need, expected behaviour and any constraints."
+            />
+            <p class="field-hint">
+              Formatting is supported. Keep the requirement focused on one outcome.
+            </p>
+            @if (form.controls.description.touched && form.controls.description.invalid) {
+              <p class="field-error">A requirement description is required.</p>
+            }
+          </div>
+
+          <div class="field-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Priority</mat-label>
+              <mat-select formControlName="priority">
+                @for (priority of priorities; track priority) {
+                  <mat-option [value]="priority">{{ priorityLabels[priority] }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Type</mat-label>
+              <mat-select formControlName="type">
+                @for (type of types; track type) {
+                  <mat-option [value]="type">{{ typeLabels[type] }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Acceptance criteria</mat-label>
+            <textarea
+              matInput
+              formControlName="acceptanceCriteria"
+              rows="6"
+              placeholder="Given an unauthenticated user&#10;When they request a password reset&#10;Then a reset email is sent within one minute"
+            ></textarea>
+            <mat-hint>Put each testable criterion on a new line.</mat-hint>
+          </mat-form-field>
+
+          <div class="form-footer">
+            <span class="autosave-status">
+              @if (autosaveAt(); as savedAt) {
+                <mat-icon>cloud_done</mat-icon>
+                Draft saved locally {{ savedAt | date: 'h:mm a' }}
+              } @else {
+                <mat-icon>cloud_queue</mat-icon>
+                Drafts save automatically in this browser.
+              }
+            </span>
+
+            <div class="form-actions">
+              <a mat-button [routerLink]="['/projects', projectId(), 'requirements']">Cancel</a>
+              <button mat-flat-button type="submit" [disabled]="submitting() || locked()">
+                @if (submitting()) {
+                  <mat-spinner diameter="18" />
+                } @else {
+                  {{ mode() === 'edit' ? 'Save changes' : 'Create requirement' }}
+                }
+              </button>
+            </div>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
+</section>

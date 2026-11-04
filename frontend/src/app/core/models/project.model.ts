@@ -98,8 +98,12 @@ export interface ProjectActivity {
     | 'project_archived'
     | 'status_changed'
     | 'member_added'
-    | 'member_removed';
-  entityType: 'project' | 'member' | 'status';
+    | 'member_removed'
+    | 'requirement_created'
+    | 'requirement_updated'
+    | 'requirement_status_changed'
+    | 'requirement_change_requested';
+  entityType: 'project' | 'member' | 'status' | 'requirement';
   entityId: string | null;
   meta: Record<string, unknown>;
   actor: ProjectUserSummary | null;

@@ -10,6 +10,10 @@ import {
   type ProjectActivity,
   type ProjectStatus,
 } from '../../../../core/models/project.model';
+import {
+  REQUIREMENT_STATUS_LABELS,
+  type RequirementStatus,
+} from '../../../../core/models/requirement.model';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
@@ -175,6 +179,23 @@ export class ProjectActivityComponent implements OnInit {
 
         return `moved the project from ${from} to ${to}`;
       }
+      case 'requirement_created':
+        return `created requirement ${this.requirementTitle(activity.meta['title'])}`;
+      case 'requirement_updated':
+        return `updated requirement ${this.requirementTitle(activity.meta['title'])}`;
+      case 'requirement_status_changed': {
+        const from = this.requirementStatusLabel(activity.meta['from']);
+        const to = this.requirementStatusLabel(activity.meta['to']);
+        const title = this.requirementTitle(activity.meta['title']);
+
+        return `moved requirement ${title} from ${from} to ${to}`;
+      }
+      case 'requirement_change_requested': {
+        const title = this.requirementTitle(activity.meta['title']);
+        const source = this.requirementTitle(activity.meta['sourceTitle']);
+
+        return `raised change request ${title} from ${source}`;
+      }
       default:
         return 'updated the project';
     }
@@ -186,5 +207,17 @@ export class ProjectActivityComponent implements OnInit {
     }
 
     return 'another status';
+  }
+
+  private requirementStatusLabel(value: unknown): string {
+    if (typeof value === 'string' && value in REQUIREMENT_STATUS_LABELS) {
+      return REQUIREMENT_STATUS_LABELS[value as RequirementStatus];
+    }
+
+    return 'another status';
+  }
+
+  private requirementTitle(value: unknown): string {
+    return typeof value === 'string' && value.length > 0 ? `"${value}"` : 'a requirement';
   }
 }

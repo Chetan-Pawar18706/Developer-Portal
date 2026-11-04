@@ -7,11 +7,15 @@ export const ACTIVITY_ACTIONS = [
   'status_changed',
   'member_added',
   'member_removed',
+  'requirement_created',
+  'requirement_updated',
+  'requirement_status_changed',
+  'requirement_change_requested',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['project', 'member', 'status'] as const;
+export const ACTIVITY_ENTITY_TYPES = ['project', 'member', 'status', 'requirement'] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];
 
 export interface ActivityLogAttributes {

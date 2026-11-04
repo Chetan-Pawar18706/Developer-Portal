@@ -1,0 +1,361 @@
+<mat-drawer-container class="detail-shell" [hasBackdrop]="true">
+  <mat-drawer
+    class="version-drawer"
+    mode="over"
+    position="end"
+    [opened]="drawerOpen()"
+    (closed)="drawerOpen.set(false)"
+  >
+    <div class="drawer-header">
+      <div>
+        <p class="eyebrow">Audit trail</p>
+        <h2>Version history</h2>
+      </div>
+      <button
+        mat-icon-button
+        type="button"
+        aria-label="Close version history"
+        (click)="drawerOpen.set(false)"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      @for (version of versions(); track version.editedAt + version.title; let i = $index) {
+        <article class="version">
+          <div class="version-meta">
+            <span class="version-number">v{{ versions().length - i }}</span>
+            <time>{{ version.editedAt | date: 'MMM d, y · h:mm a' }}</time>
+          </div>
+          <h3>{{ version.title }}</h3>
+          <div class="version-editor">
+            <app-user-avatar
+              [name]="version.editedBy?.name ?? 'Unknown user'"
+              [avatar]="version.editedBy?.avatar ?? null"
+              size="sm"
+            />
+            <span>{{ version.editedBy?.name ?? 'Unknown user' }}</span>
+          </div>
+          <div class="rich-content version-content" [innerHTML]="version.description"></div>
+        </article>
+      } @empty {
+        <p class="muted">No versions have been recorded yet.</p>
+      }
+    </div>
+  </mat-drawer>
+
+  <mat-drawer-content>
+    @if (store.selectedLoading() && !store.selected()) {
+      <app-loading-skeleton [rows]="8" />
+    } @else if (store.selected(); as requirement) {
+      <section class="requirement-detail">
+        <a
+          mat-button
+          type="button"
+          [routerLink]="['/projects', projectId(), 'requirements']"
+          class="back-link"
+        >
+          <mat-icon>arrow_back</mat-icon>
+          Requirements
+        </a>
+
+        <header class="detail-header">
+          <div class="title-block">
+            <div class="title-row">
+              <h1>{{ requirement.title }}</h1>
+              <app-status-badge
+                [status]="requirement.status"
+                [label]="statusLabels[requirement.status]"
+              />
+            </div>
+
+            <div class="meta-row">
+              <span class="priority" [class]="'priority-' + requirement.priority">
+                {{ priorityLabels[requirement.priority] }}
+              </span>
+              <span>
+                <mat-icon>category</mat-icon>
+                {{ typeLabels[requirement.type] }}
+              </span>
+              <span>
+                <mat-icon>person</mat-icon>
+                {{ requirement.createdBy?.name ?? 'Unknown' }}
+              </span>
+              <span>
+                <mat-icon>update</mat-icon>
+                Updated {{ requirement.updatedAt | date: 'MMM d, y' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            @if (canEdit()) {
+              <a
+                mat-stroked-button
+                [routerLink]="['/projects', projectId(), 'requirements', requirement.id, 'edit']"
+              >
+                <mat-icon>edit</mat-icon>
+                Edit
+              </a>
+            }
+            <button mat-stroked-button type="button" (click)="drawerOpen.set(true)">
+              <mat-icon>history</mat-icon>
+              Versions ({{ requirement.versions.length }})
+            </button>
+            @if (canRaiseChangeRequest()) {
+              <button mat-flat-button type="button" (click)="openChangeRequest()">
+                <mat-icon>alt_route</mat-icon>
+                Change request
+              </button>
+            }
+          </div>
+        </header>
+
+        @if (actionError(); as error) {
+          <div class="error-banner" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ error }}</span>
+          </div>
+        }
+
+        @if (requirement.status === 'clarification' || requirement.status === 'rejected') {
+          <div
+            class="review-banner"
+            [class.rejected]="requirement.status === 'rejected'"
+            role="status"
+          >
+            <mat-icon>{{ requirement.status === 'rejected' ? 'block' : 'help' }}</mat-icon>
+            <div>
+              <strong>
+                {{
+                  requirement.status === 'rejected'
+                    ? 'Requirement rejected'
+                    : 'Clarification requested'
+                }}
+              </strong>
+              <p>
+                {{
+                  requirement.reviewNote ||
+                    'The reviewer has not added a note. Check the activity log for details.'
+                }}
+              </p>
+            </div>
+          </div>
+        }
+
+        <mat-card appearance="outlined" class="stepper-card">
+          <mat-card-content>
+            <ol class="status-stepper">
+              @for (step of stepper; track step; let i = $index) {
+                <li [class]="'step-' + stepState(i)">
+                  <span class="step-dot">
+                    @switch (stepState(i)) {
+                      @case ('complete') {
+                        <mat-icon>check</mat-icon>
+                      }
+                      @case ('current') {
+                        <mat-icon>radio_button_checked</mat-icon>
+                      }
+                      @case ('warning') {
+                        <mat-icon>help</mat-icon>
+                      }
+                      @case ('error') {
+                        <mat-icon>close</mat-icon>
+                      }
+                      @default {
+                        <span>{{ i + 1 }}</span>
+                      }
+                    }
+                  </span>
+                  <span class="step-label">{{ statusLabels[step] }}</span>
+                </li>
+              }
+            </ol>
+          </mat-card-content>
+        </mat-card>
+
+        <div class="detail-grid">
+          <div class="main-column">
+            <mat-card appearance="outlined" class="section-card">
+              <mat-card-header>
+                <mat-card-title>Requirement description</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="rich-content" [innerHTML]="requirement.description"></div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card appearance="outlined" class="section-card">
+              <mat-card-header>
+                <mat-card-title>Acceptance criteria</mat-card-title>
+                <mat-card-subtitle>
+                  {{ requirement.acceptanceCriteria.length }}
+                  {{ requirement.acceptanceCriteria.length === 1 ? 'criterion' : 'criteria' }}
+                </mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                @if (requirement.acceptanceCriteria.length > 0) {
+                  <ul class="criteria-list">
+                    @for (criterion of requirement.acceptanceCriteria; track criterion) {
+                      <li>
+                        <mat-icon>check_circle</mat-icon>
+                        <span>{{ criterion }}</span>
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="muted">No acceptance criteria have been added yet.</p>
+                }
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card appearance="outlined" class="section-card">
+              <mat-card-header>
+                <mat-card-title>Linked tasks</mat-card-title>
+                <mat-card-subtitle>Delivery work will be linked here in Part 7</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <app-empty-state
+                  icon="task_alt"
+                  title="No linked tasks yet"
+                  message="Tasks created from this requirement will appear here once task planning is available."
+                />
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <aside class="side-column">
+            <mat-card appearance="outlined" class="section-card">
+              <mat-card-header>
+                <mat-card-title>Review</mat-card-title>
+                <mat-card-subtitle>What happens next</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                @if (actions().length > 0) {
+                  <div class="action-list">
+                    @for (action of actions(); track action.target) {
+                      <button
+                        mat-flat-button
+                        type="button"
+                        [color]="action.tone === 'warn' ? 'warn' : 'primary'"
+                        [disabled]="acting()"
+                        (click)="runAction(action)"
+                      >
+                        <mat-icon>{{ action.icon }}</mat-icon>
+                        {{ action.label }}
+                      </button>
+                    }
+                  </div>
+                } @else if (requirement.status === 'approved') {
+                  <div class="approved-note">
+                    <mat-icon>verified</mat-icon>
+                    <div>
+                      <strong>Approved scope</strong>
+                      <p>The requirement is locked. Raise a change request to propose new scope.</p>
+                    </div>
+                  </div>
+                } @else if (requirement.status === 'rejected') {
+                  <p class="muted">
+                    This requirement is closed. Raise a new requirement or a change request from an
+                    approved requirement if the scope evolves.
+                  </p>
+                } @else {
+                  <p class="muted">No review actions are available for your role at this stage.</p>
+                }
+
+                @if (requirement.reviewNote && requirement.status === 'approved') {
+                  <mat-divider class="divider" />
+                  <div class="approved-note">
+                    <mat-icon>notes</mat-icon>
+                    <div>
+                      <strong>Review note</strong>
+                      <p>{{ requirement.reviewNote }}</p>
+                    </div>
+                  </div>
+                }
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card appearance="outlined" class="section-card">
+              <mat-card-header>
+                <mat-card-title>Details</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <dl class="detail-list">
+                  <div>
+                    <dt>Priority</dt>
+                    <dd>{{ priorityLabels[requirement.priority] }}</dd>
+                  </div>
+                  <div>
+                    <dt>Type</dt>
+                    <dd>{{ typeLabels[requirement.type] }}</dd>
+                  </div>
+                  <div>
+                    <dt>Created</dt>
+                    <dd>{{ requirement.createdAt | date: 'MMM d, y' }}</dd>
+                  </div>
+                  <div>
+                    <dt>Last updated</dt>
+                    <dd>{{ requirement.updatedAt | date: 'MMM d, y · h:mm a' }}</dd>
+                  </div>
+                </dl>
+              </mat-card-content>
+            </mat-card>
+
+            @if (requirement.changeRequestOf; as source) {
+              <mat-card appearance="outlined" class="section-card">
+                <mat-card-header>
+                  <mat-card-title>Raised from</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                  <a
+                    class="source-link"
+                    [routerLink]="['/projects', projectId(), 'requirements', source.id]"
+                  >
+                    <mat-icon>alt_route</mat-icon>
+                    <span>{{ source.title }}</span>
+                  </a>
+                  <app-status-badge
+                    [status]="source.status"
+                    [label]="statusLabels[source.status]"
+                  />
+                </mat-card-content>
+              </mat-card>
+            }
+
+            @if (requirement.attachments.length > 0) {
+              <mat-card appearance="outlined" class="section-card">
+                <mat-card-header>
+                  <mat-card-title>Attachments</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                  <ul class="attachment-list">
+                    @for (attachment of requirement.attachments; track attachment.url) {
+                      <li>
+                        <mat-icon>attach_file</mat-icon>
+                        <a [href]="attachment.url" target="_blank" rel="noopener noreferrer">
+                          {{ attachment.name }}
+                        </a>
+                      </li>
+                    }
+                  </ul>
+                </mat-card-content>
+              </mat-card>
+            }
+          </aside>
+        </div>
+      </section>
+    } @else if (store.error(); as error) {
+      <div class="not-found">
+        <app-empty-state icon="assignment_late" title="Requirement not available" [message]="error">
+          <a mat-stroked-button [routerLink]="['/projects', projectId(), 'requirements']">
+            Back to requirements
+          </a>
+        </app-empty-state>
+      </div>
+    } @else {
+      <app-loading-skeleton [rows]="8" />
+    }
+  </mat-drawer-content>
+</mat-drawer-container>

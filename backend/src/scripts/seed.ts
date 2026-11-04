@@ -12,6 +12,12 @@ import {
   type ProjectPriority,
   type ProjectStatus,
 } from '../models/project.model';
+import {
+  Requirement,
+  type RequirementPriority,
+  type RequirementStatus,
+  type RequirementType,
+} from '../models/requirement.model';
 import { User, hashPassword, type UserDocument, type UserRole } from '../models/user.model';
 
 interface SeedUser {
@@ -41,6 +47,23 @@ interface SeedSignOff {
   feedback: string;
 }
 
+interface SeedRequirement {
+  title: string;
+  description: string;
+  acceptanceCriteria: string[];
+  priority: RequirementPriority;
+  type: RequirementType;
+  status: RequirementStatus;
+  createdDaysAgo: number;
+  updatedDaysAgo: number;
+  createdByEmail: string;
+  editedByEmail?: string;
+  editedDaysAgo?: number;
+  originalDescription?: string;
+  reviewNote?: string;
+  changeRequestOf?: string;
+}
+
 interface SeedProject {
   title: string;
   description: string;
@@ -55,6 +78,7 @@ interface SeedProject {
   dueInDays: number | null;
   members: SeedMember[];
   signOff?: SeedSignOff;
+  requirements: SeedRequirement[];
   activity: SeedActivity[];
 }
 
@@ -110,6 +134,63 @@ const seedProjects: readonly SeedProject[] = [
       { email: 'chetanpawar18706@gmail.com', role: 'pm' },
       { email: 'raghavshastri@gmail.com', role: 'developer' },
       { email: 'iswarikokankar@gmail.com', role: 'developer' },
+    ],
+    requirements: [
+      {
+        title: 'Password reset and account recovery',
+        description:
+          '<p>Customers can request a secure password reset link from the sign-in page. The reset link must expire automatically and invalidate all other active sessions after the password changes.</p>',
+        acceptanceCriteria: [
+          'A reset email is delivered within one minute',
+          'Reset links expire after 30 minutes and can only be used once',
+          'Changing the password invalidates other active sessions',
+        ],
+        priority: 'must',
+        type: 'functional',
+        status: 'approved',
+        createdDaysAgo: 66,
+        updatedDaysAgo: 58,
+        createdByEmail: 'nikhilsury@gmail.com',
+        editedByEmail: 'chetanpawar18706@gmail.com',
+        editedDaysAgo: 60,
+        originalDescription:
+          '<p>Customers need a way to reset their password from the portal sign-in page.</p>',
+        reviewNote: 'Approved after the security review confirmed link expiry and session invalidation.',
+      },
+      {
+        title: 'Invoice history and PDF downloads',
+        description:
+          '<p>The billing area lists every invoice with its issue date, amount and payment status. Customers can download an accessible PDF copy of any invoice from the current or previous billing periods.</p>',
+        acceptanceCriteria: [
+          'Invoices are listed newest first with status visible',
+          'PDF downloads use the authenticated customer session',
+          'Empty billing history shows a helpful explanation',
+        ],
+        priority: 'should',
+        type: 'functional',
+        status: 'under_review',
+        createdDaysAgo: 24,
+        updatedDaysAgo: 21,
+        createdByEmail: 'nikhilsury@gmail.com',
+        editedByEmail: 'nikhilsury@gmail.com',
+        editedDaysAgo: 22,
+      },
+      {
+        title: 'Support ticket status visibility',
+        description:
+          '<p>Customers can see the current status of their support tickets without leaving the portal. The view should explain what each status means and when the customer can expect a response.</p>',
+        acceptanceCriteria: [
+          'Open, in progress, waiting on customer and resolved states are explained',
+          'Only tickets owned by the signed-in customer are shown',
+        ],
+        priority: 'could',
+        type: 'functional',
+        status: 'clarification',
+        createdDaysAgo: 19,
+        updatedDaysAgo: 16,
+        createdByEmail: 'nikhilsury@gmail.com',
+        reviewNote: 'Please clarify which ticket fields and timestamps should be visible to customers.',
+      },
     ],
     activity: [
       {
@@ -195,6 +276,40 @@ const seedProjects: readonly SeedProject[] = [
       { email: 'chetanpawar18706@gmail.com', role: 'pm' },
       { email: 'raghavshastri@gmail.com', role: 'developer' },
     ],
+    requirements: [
+      {
+        title: 'Saved payment methods at checkout',
+        description:
+          '<p>Returning customers can select a saved payment method without re-entering card details. New customers can opt in to save a payment method after a successful purchase.</p>',
+        acceptanceCriteria: [
+          'Saved cards show the brand and last four digits only',
+          'Customers can remove a saved payment method',
+          'Saving a method requires explicit consent',
+        ],
+        priority: 'must',
+        type: 'functional',
+        status: 'submitted',
+        createdDaysAgo: 10,
+        updatedDaysAgo: 9,
+        createdByEmail: 'nikhilsury@gmail.com',
+      },
+      {
+        title: 'Low-bandwidth checkout performance',
+        description:
+          '<p>The complete checkout journey remains usable on a slow mobile connection. Product images and non-critical assets load after the payment form is interactive.</p>',
+        acceptanceCriteria: [
+          'The payment form becomes interactive within three seconds on a throttled connection',
+          'Checkout can complete without loading decorative images',
+          'Failed asset requests do not block payment',
+        ],
+        priority: 'should',
+        type: 'non_functional',
+        status: 'draft',
+        createdDaysAgo: 8,
+        updatedDaysAgo: 8,
+        createdByEmail: 'nikhilsury@gmail.com',
+      },
+    ],
     activity: [
       {
         actorEmail: 'nikhilsury@gmail.com',
@@ -243,6 +358,46 @@ const seedProjects: readonly SeedProject[] = [
       { email: 'nikhilsury@gmail.com', role: 'client' },
       { email: 'chetanpawar18706@gmail.com', role: 'pm' },
       { email: 'iswarikokankar@gmail.com', role: 'developer' },
+    ],
+    requirements: [
+      {
+        title: 'Batch stock updates every five minutes',
+        description:
+          '<p>The integration collects stock changes from the warehouse system and publishes them to the storefront in batches. Duplicate updates are ignored and failed batches retry with backoff.</p>',
+        acceptanceCriteria: [
+          'Stock updates are visible within five minutes of the warehouse change',
+          'Duplicate events do not change the final stock count',
+          'Failed batches retry without dropping later updates',
+        ],
+        priority: 'must',
+        type: 'non_functional',
+        status: 'approved',
+        createdDaysAgo: 88,
+        updatedDaysAgo: 82,
+        createdByEmail: 'nikhilsury@gmail.com',
+        editedByEmail: 'chetanpawar18706@gmail.com',
+        editedDaysAgo: 84,
+        originalDescription:
+          '<p>Stock changes need to move from the warehouse to the storefront regularly.</p>',
+        reviewNote: 'Approved with the five-minute freshness target and retry policy.',
+      },
+      {
+        title: 'Mismatch reconciliation report',
+        description:
+          '<p>Operations can review stock mismatches between the warehouse and storefront, with filters for SKU, location and last sync time.</p>',
+        acceptanceCriteria: [
+          'Mismatches are grouped by SKU and location',
+          'The report shows when each record was last reconciled',
+          'Operations can export the current mismatch list',
+        ],
+        priority: 'should',
+        type: 'functional',
+        status: 'clarification',
+        createdDaysAgo: 32,
+        updatedDaysAgo: 27,
+        createdByEmail: 'nikhilsury@gmail.com',
+        reviewNote: 'Which export format and date range should the operations team use?',
+      },
     ],
     activity: [
       {
@@ -314,6 +469,63 @@ const seedProjects: readonly SeedProject[] = [
       { email: 'chetanpawar18706@gmail.com', role: 'pm' },
       { email: 'raghavshastri@gmail.com', role: 'developer' },
       { email: 'iswarikokankar@gmail.com', role: 'developer' },
+    ],
+    requirements: [
+      {
+        title: 'Executive revenue trend dashboard',
+        description:
+          '<p>Executives can review monthly revenue trends, compare targets and drill into the client accounts driving the largest changes.</p>',
+        acceptanceCriteria: [
+          'Revenue trends load for the selected rolling twelve-month period',
+          'Target and actual values are visually distinct',
+          'Selecting a month filters the contributing client accounts',
+        ],
+        priority: 'must',
+        type: 'functional',
+        status: 'approved',
+        createdDaysAgo: 156,
+        updatedDaysAgo: 144,
+        createdByEmail: 'nikhilsury@gmail.com',
+        editedByEmail: 'chetanpawar18706@gmail.com',
+        editedDaysAgo: 150,
+        originalDescription:
+          '<p>Executives need a dashboard that shows revenue over time.</p>',
+        reviewNote: 'Approved after the finance team validated the target calculation.',
+      },
+      {
+        title: 'Export dashboard data to CSV',
+        description:
+          '<p>Every dashboard chart supports a CSV export of the currently filtered dataset, including the selected date range and comparison period.</p>',
+        acceptanceCriteria: [
+          'Exports match the filters currently applied on screen',
+          'CSV files include readable column headings and ISO dates',
+          'Large exports show progress and do not block other dashboard actions',
+        ],
+        priority: 'should',
+        type: 'functional',
+        status: 'approved',
+        createdDaysAgo: 130,
+        updatedDaysAgo: 118,
+        createdByEmail: 'nikhilsury@gmail.com',
+        reviewNote: 'Approved after the export format matched the finance reporting template.',
+      },
+      {
+        title: 'Change request: quarterly revenue comparison',
+        description:
+          '<p>Add a quarterly comparison view to the revenue dashboard so leadership can compare the current quarter against the previous four quarters.</p>',
+        acceptanceCriteria: [
+          'The comparison view groups revenue by fiscal quarter',
+          'The previous four quarters are available as comparison baselines',
+          'The existing monthly trend view remains unchanged',
+        ],
+        priority: 'should',
+        type: 'functional',
+        status: 'draft',
+        createdDaysAgo: 5,
+        updatedDaysAgo: 5,
+        createdByEmail: 'nikhilsury@gmail.com',
+        changeRequestOf: 'Executive revenue trend dashboard',
+      },
     ],
     signOff: {
       signedDaysAgo: 8,
@@ -388,6 +600,24 @@ const seedProjects: readonly SeedProject[] = [
     startInDays: 14,
     dueInDays: 90,
     members: [{ email: 'nikhilsury@gmail.com', role: 'client' }],
+    requirements: [
+      {
+        title: 'Guided vendor application form',
+        description:
+          '<p>New vendors complete a guided application with company details, tax information and supporting documents. Progress is saved between sessions.</p>',
+        acceptanceCriteria: [
+          'Applicants can save and resume a partially completed application',
+          'Required fields are validated as the vendor moves between steps',
+          'Uploaded documents show file name, type and size',
+        ],
+        priority: 'should',
+        type: 'functional',
+        status: 'draft',
+        createdDaysAgo: 2,
+        updatedDaysAgo: 2,
+        createdByEmail: 'nikhilsury@gmail.com',
+      },
+    ],
     activity: [
       {
         actorEmail: 'nikhilsury@gmail.com',
@@ -407,6 +637,21 @@ function dateFromNow(days: number, hour = 10): Date {
   return date;
 }
 
+function previousRequirementStatus(status: RequirementStatus): RequirementStatus {
+  switch (status) {
+    case 'submitted':
+      return 'draft';
+    case 'under_review':
+      return 'submitted';
+    case 'approved':
+    case 'clarification':
+    case 'rejected':
+      return 'under_review';
+    default:
+      return 'draft';
+  }
+}
+
 async function seed(): Promise<void> {
   if (env.NODE_ENV === 'production') {
     console.error('Refusing to seed: NODE_ENV is production.');
@@ -417,6 +662,7 @@ async function seed(): Promise<void> {
     await connectDatabase();
 
     await ActivityLog.deleteMany({});
+    await Requirement.deleteMany({});
     await Project.deleteMany({});
     await User.deleteMany({});
 
@@ -444,6 +690,12 @@ async function seed(): Promise<void> {
     }
 
     const createdProjects: Array<{ id: string; title: string }> = [];
+    const createdRequirements: Array<{
+      id: string;
+      title: string;
+      project: string;
+      status: RequirementStatus;
+    }> = [];
 
     for (const seedProject of seedProjects) {
       const client = requireUser(seedProject.clientEmail);
@@ -484,6 +736,131 @@ async function seed(): Promise<void> {
 
       createdProjects.push({ id: project.id, title: project.title });
 
+      const requirementsByTitle = new Map<
+        string,
+        { id: string; documentId: Types.ObjectId; title: string }
+      >();
+
+      for (const seedRequirement of seedProject.requirements) {
+        const creator = requireUser(seedRequirement.createdByEmail);
+        const createdAt = dateFromNow(-seedRequirement.createdDaysAgo, 11);
+        const updatedAt = dateFromNow(-seedRequirement.updatedDaysAgo, 15);
+        const source = seedRequirement.changeRequestOf
+          ? requirementsByTitle.get(seedRequirement.changeRequestOf)
+          : undefined;
+
+        if (seedRequirement.changeRequestOf && !source) {
+          throw new Error(
+            `Seed change request source not found: ${seedRequirement.changeRequestOf}`,
+          );
+        }
+
+        const versions = [
+          {
+            title: seedRequirement.title,
+            description:
+              seedRequirement.originalDescription ?? seedRequirement.description,
+            editedBy: creator._id,
+            editedAt: createdAt,
+          },
+        ];
+
+        if (seedRequirement.editedByEmail) {
+          versions.push({
+            title: seedRequirement.title,
+            description: seedRequirement.description,
+            editedBy: requireUser(seedRequirement.editedByEmail)._id,
+            editedAt: dateFromNow(
+              -(seedRequirement.editedDaysAgo ?? seedRequirement.updatedDaysAgo),
+              14,
+            ),
+          });
+        }
+
+        const requirement = await Requirement.create({
+          project: project._id,
+          title: seedRequirement.title,
+          description: seedRequirement.description,
+          acceptanceCriteria: seedRequirement.acceptanceCriteria,
+          priority: seedRequirement.priority,
+          type: seedRequirement.type,
+          status: seedRequirement.status,
+          versions,
+          attachments: [],
+          createdBy: creator._id,
+          reviewNote: seedRequirement.reviewNote ?? '',
+          changeRequestOf: source?.documentId ?? null,
+          createdAt,
+          updatedAt,
+        });
+
+        requirementsByTitle.set(requirement.title, {
+          id: requirement.id,
+          documentId: requirement._id,
+          title: requirement.title,
+        });
+        createdRequirements.push({
+          id: requirement.id,
+          title: requirement.title,
+          project: project.title,
+          status: requirement.status,
+        });
+
+        await ActivityLog.create({
+          project: project._id,
+          actor: creator._id,
+          action: 'requirement_created',
+          entityType: 'requirement',
+          entityId: requirement._id,
+          meta: {
+            requirementId: requirement.id,
+            title: requirement.title,
+            status: requirement.status,
+          },
+          createdAt,
+        });
+
+        if (requirement.status !== 'draft') {
+          await ActivityLog.create({
+            project: project._id,
+            actor:
+              requirement.status === 'submitted'
+                ? creator._id
+                : requireUser('chetanpawar18706@gmail.com')._id,
+            action: 'requirement_status_changed',
+            entityType: 'requirement',
+            entityId: requirement._id,
+            meta: {
+              requirementId: requirement.id,
+              title: requirement.title,
+              from: previousRequirementStatus(requirement.status),
+              to: requirement.status,
+              ...(seedRequirement.reviewNote
+                ? { note: seedRequirement.reviewNote }
+                : {}),
+            },
+            createdAt: updatedAt,
+          });
+        }
+
+        if (source) {
+          await ActivityLog.create({
+            project: project._id,
+            actor: creator._id,
+            action: 'requirement_change_requested',
+            entityType: 'requirement',
+            entityId: requirement._id,
+            meta: {
+              requirementId: requirement.id,
+              sourceRequirementId: source.id,
+              sourceTitle: source.title,
+              title: requirement.title,
+            },
+            createdAt,
+          });
+        }
+      }
+
       if (seedProject.activity.length > 0) {
         await ActivityLog.insertMany(
           seedProject.activity.map((activity, index) => ({
@@ -499,7 +876,9 @@ async function seed(): Promise<void> {
       }
     }
 
-    console.log(`Seeded ${createdUsers.length} users and ${createdProjects.length} projects.`);
+    console.log(
+      `Seeded ${createdUsers.length} users, ${createdProjects.length} projects and ${createdRequirements.length} requirements.`,
+    );
     console.log('\nDemo accounts:');
 
     for (const user of seedUsers) {
@@ -510,6 +889,14 @@ async function seed(): Promise<void> {
 
     for (const project of createdProjects) {
       console.log(`  ${project.title} (${project.id})`);
+    }
+
+    console.log('\nRequirements:');
+
+    for (const requirement of createdRequirements) {
+      console.log(
+        `  ${requirement.project} · ${requirement.title} (${requirement.status}, ${requirement.id})`,
+      );
     }
   } catch (error) {
     console.error('Seed failed:', error);
