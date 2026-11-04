@@ -1,7 +1,11 @@
 import type { QueryFilter } from 'mongoose';
 import { Types } from 'mongoose';
 import sanitizeHtml from 'sanitize-html';
-import type { ProjectDocument } from '../models/project.model';
+import {
+  Project,
+  type ProjectDocument,
+  type ProjectStatus,
+} from '../models/project.model';
 import {
   Requirement,
   type RequirementAttributes,
@@ -16,12 +20,14 @@ import type { UserRole } from '../models/user.model';
 import type {
   CreateChangeRequestInput,
   CreateRequirementInput,
+  ListAllRequirementsQuery,
   ListRequirementsQuery,
   UpdateRequirementInput,
   UpdateRequirementStatusInput,
 } from '../routes/requirement.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { buildProjectVisibilityFilter } from './project.service';
 
 const RICH_TEXT_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: [
@@ -63,6 +69,7 @@ const RICH_TEXT_OPTIONS: sanitizeHtml.IOptions = {
 };
 
 const REQUIREMENT_POPULATE = [
+  { path: 'project', select: 'title status' },
   { path: 'createdBy', select: 'name email role avatar' },
   { path: 'versions.editedBy', select: 'name email role avatar' },
   { path: 'changeRequestOf', select: 'title status' },
@@ -118,6 +125,8 @@ export interface PublicRequirementLink {
 export interface PublicRequirement {
   id: string;
   projectId: string;
+  projectTitle: string;
+  projectStatus: ProjectStatus | null;
   title: string;
   description: string;
   acceptanceCriteria: string[];
@@ -148,9 +157,15 @@ interface PopulatedUserShape {
   avatar: string | null;
 }
 
+interface PopulatedProjectShape {
+  _id: Types.ObjectId;
+  title: string;
+  status: ProjectStatus;
+}
+
 interface PopulatedRequirementShape {
   id: string;
-  project: Types.ObjectId;
+  project: Types.ObjectId | PopulatedProjectShape | null;
   title: string;
   description: string;
   acceptanceCriteria: string[];
@@ -193,10 +208,16 @@ function toUserSummary(user: PopulatedUserShape): RequirementUserSummary {
 
 function toPublicRequirement(requirement: RequirementDocument): PublicRequirement {
   const populated = requirement as unknown as PopulatedRequirementShape;
+  const project = populated.project;
+  const projectIsPopulated =
+    project !== null && !(project instanceof Types.ObjectId);
+  const projectId = projectIsPopulated ? project._id.toString() : project?.toString() ?? '';
 
   return {
     id: populated.id,
-    projectId: populated.project.toString(),
+    projectId,
+    projectTitle: projectIsPopulated ? project.title : '',
+    projectStatus: projectIsPopulated ? project.status : null,
     title: populated.title,
     description: populated.description,
     acceptanceCriteria: populated.acceptanceCriteria,
@@ -393,6 +414,67 @@ export async function listRequirements(
 ): Promise<RequirementListResult> {
   const filter: QueryFilter<RequirementAttributes> = {
     project: new Types.ObjectId(projectId),
+  };
+
+  if (query.search) {
+    const pattern = new RegExp(escapeRegExp(query.search), 'i');
+    filter.$or = [{ title: pattern }, { description: pattern }];
+  }
+
+  if (query.status) {
+    filter.status = query.status;
+  }
+
+  if (query.priority) {
+    filter.priority = query.priority;
+  }
+
+  if (query.type) {
+    filter.type = query.type;
+  }
+
+  const direction = query.sortOrder === 'asc' ? 1 : -1;
+  const skip = (query.page - 1) * query.limit;
+
+  const [requirements, total] = await Promise.all([
+    Requirement.find(filter)
+      .populate(REQUIREMENT_POPULATE)
+      .sort({ [query.sortBy]: direction })
+      .skip(skip)
+      .limit(query.limit),
+    Requirement.countDocuments(filter),
+  ]);
+
+  return {
+    data: requirements.map(toPublicRequirement),
+    total,
+    page: query.page,
+    limit: query.limit,
+  };
+}
+
+export async function listAllRequirements(
+  actor: RequirementActor,
+  query: ListAllRequirementsQuery,
+): Promise<RequirementListResult> {
+  const projectFilter = buildProjectVisibilityFilter(actor);
+
+  if (query.projectId) {
+    projectFilter._id = new Types.ObjectId(query.projectId);
+  }
+
+  const visibleProjects = await Project.find(projectFilter).select('_id');
+
+  if (query.projectId && visibleProjects.length === 0) {
+    throw new ApiError(404, 'Project not found');
+  }
+
+  if (visibleProjects.length === 0) {
+    return { data: [], total: 0, page: query.page, limit: query.limit };
+  }
+
+  const filter: QueryFilter<RequirementAttributes> = {
+    project: { $in: visibleProjects.map((project) => project._id) },
   };
 
   if (query.search) {

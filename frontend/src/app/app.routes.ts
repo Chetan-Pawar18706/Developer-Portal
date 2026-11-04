@@ -210,11 +210,10 @@ export const routes: Routes = [
         data: {
           title: 'Requirements',
           icon: 'assignment',
-          description: 'Capture project requirements and follow them through approval.',
         },
         loadComponent: () =>
-          import('./shared/components/placeholder-page/placeholder-page.component').then(
-            (module) => module.PlaceholderPageComponent,
+          import('./features/requirements/requirement-workspace/requirement-workspace.component').then(
+            (module) => module.RequirementWorkspaceComponent,
           ),
       },
       {

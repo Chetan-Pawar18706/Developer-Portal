@@ -7,6 +7,7 @@ import { validate } from '../middleware/validate';
 import { asyncHandler } from '../utils/asyncHandler';
 import {
   createChangeRequestSchema,
+  listAllRequirementsQuerySchema,
   requirementIdParamSchema,
   updateRequirementSchema,
   updateRequirementStatusSchema,
@@ -15,6 +16,12 @@ import {
 export const requirementRouter = Router();
 
 requirementRouter.use(authenticate);
+
+requirementRouter.get(
+  '/',
+  validate({ query: listAllRequirementsQuerySchema }),
+  asyncHandler(requirementController.listRequirements),
+);
 
 requirementRouter.get(
   '/:id',

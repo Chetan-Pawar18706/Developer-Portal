@@ -1,4 +1,4 @@
-import type { ProjectUserSummary } from './project.model';
+import type { ProjectStatus, ProjectUserSummary } from './project.model';
 
 export const REQUIREMENT_STATUSES = [
   'draft',
@@ -82,6 +82,8 @@ export interface RequirementLink {
 export interface Requirement {
   id: string;
   projectId: string;
+  projectTitle: string;
+  projectStatus: ProjectStatus | null;
   title: string;
   description: string;
   acceptanceCriteria: string[];
@@ -99,6 +101,7 @@ export interface Requirement {
 
 export interface RequirementFilters {
   search: string;
+  projectId?: string;
   status: RequirementStatus | '';
   priority: RequirementPriority | '';
   type: RequirementType | '';
@@ -112,6 +115,7 @@ export interface RequirementListQuery extends Omit<
   RequirementFilters,
   'status' | 'priority' | 'type'
 > {
+  projectId?: string;
   status?: RequirementStatus;
   priority?: RequirementPriority;
   type?: RequirementType;

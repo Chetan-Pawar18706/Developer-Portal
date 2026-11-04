@@ -70,6 +70,7 @@ All requirement endpoints require an authenticated user with access to the paren
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
+| `GET` | `/api/requirements` | List requirements across every project the user can access, with an optional `projectId` filter |
 | `GET` | `/api/projects/:id/requirements` | List project requirements with search, status, priority, type and pagination |
 | `POST` | `/api/projects/:id/requirements` | Create a draft requirement (admin, pm or the client owner) |
 | `GET` | `/api/requirements/:id` | Get a requirement with versions and change-request link |

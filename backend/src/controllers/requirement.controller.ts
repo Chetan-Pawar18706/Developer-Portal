@@ -4,6 +4,7 @@ import type { RequirementDocument } from '../models/requirement.model';
 import type {
   CreateChangeRequestInput,
   CreateRequirementInput,
+  ListAllRequirementsQuery,
   ListRequirementsQuery,
   UpdateRequirementInput,
   UpdateRequirementStatusInput,
@@ -34,6 +35,15 @@ function requireRequirement(req: Request): RequirementDocument {
   }
 
   return req.requirement;
+}
+
+export async function listRequirements(req: Request, res: Response): Promise<void> {
+  const result = await requirementService.listAllRequirements(
+    requireActor(req),
+    req.query as unknown as ListAllRequirementsQuery,
+  );
+
+  sendPaginated(res, result.data, result.total, result.page, result.limit);
 }
 
 export async function listProjectRequirements(

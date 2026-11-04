@@ -40,6 +40,10 @@ export const listRequirementsQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
+export const listAllRequirementsQuerySchema = listRequirementsQuerySchema.extend({
+  projectId: objectIdSchema.optional(),
+});
+
 export const createRequirementSchema = z.object({
   title: z.string().trim().min(3).max(160),
   description: z.string().trim().min(1).max(20_000),
@@ -76,6 +80,7 @@ export const createChangeRequestSchema = z.object({
 });
 
 export type ListRequirementsQuery = z.infer<typeof listRequirementsQuerySchema>;
+export type ListAllRequirementsQuery = z.infer<typeof listAllRequirementsQuerySchema>;
 export type CreateRequirementInput = z.infer<typeof createRequirementSchema>;
 export type UpdateRequirementInput = z.infer<typeof updateRequirementSchema>;
 export type UpdateRequirementStatusInput = z.infer<typeof updateRequirementStatusSchema>;

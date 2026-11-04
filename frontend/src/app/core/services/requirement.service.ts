@@ -19,33 +19,23 @@ export class RequirementService {
   private readonly baseUrl = `${environment.apiUrl}/requirements`;
 
   list(projectId: string, query: RequirementListQuery): Observable<PaginatedData<Requirement>> {
-    let params = new HttpParams()
-      .set('page', query.page)
-      .set('limit', query.limit)
-      .set('sortBy', query.sortBy)
-      .set('sortOrder', query.sortOrder);
-
-    if (query.search) {
-      params = params.set('search', query.search);
-    }
-
-    if (query.status) {
-      params = params.set('status', query.status);
-    }
-
-    if (query.priority) {
-      params = params.set('priority', query.priority);
-    }
-
-    if (query.type) {
-      params = params.set('type', query.type);
-    }
-
     return this.http
       .get<ApiResponse<PaginatedData<Requirement>>>(
         `${this.projectBaseUrl}/${projectId}/requirements`,
-        { params },
+        { params: this.buildListParams(query) },
       )
+      .pipe(map((response) => response.data));
+  }
+
+  listAll(query: RequirementListQuery): Observable<PaginatedData<Requirement>> {
+    let params = this.buildListParams(query);
+
+    if (query.projectId) {
+      params = params.set('projectId', query.projectId);
+    }
+
+    return this.http
+      .get<ApiResponse<PaginatedData<Requirement>>>(this.baseUrl, { params })
       .pipe(map((response) => response.data));
   }
 
@@ -92,5 +82,31 @@ export class RequirementService {
         input,
       )
       .pipe(map((response) => response.data.requirement));
+  }
+
+  private buildListParams(query: RequirementListQuery): HttpParams {
+    let params = new HttpParams()
+      .set('page', query.page)
+      .set('limit', query.limit)
+      .set('sortBy', query.sortBy)
+      .set('sortOrder', query.sortOrder);
+
+    if (query.search) {
+      params = params.set('search', query.search);
+    }
+
+    if (query.status) {
+      params = params.set('status', query.status);
+    }
+
+    if (query.priority) {
+      params = params.set('priority', query.priority);
+    }
+
+    if (query.type) {
+      params = params.set('type', query.type);
+    }
+
+    return params;
   }
 }
