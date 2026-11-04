@@ -91,7 +91,7 @@ frontend/
   src/app/
     core/        singletons: auth, HTTP interceptors, guards
     shared/      reusable components, directives, pipes
-    features/    auth, dashboard, projects, requirements, tasks,
+    features/    landing, auth, dashboard, projects, requirements, tasks,
                  issues, communication, files, admin
   src/environments/
 ```

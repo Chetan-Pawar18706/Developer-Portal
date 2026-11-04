@@ -1,0 +1,274 @@
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="landing">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" routerLink="/" aria-label="DevPortal home">
+        <span class="brand-mark"><mat-icon>hub</mat-icon></span>
+        <span class="brand-name">DevPortal</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#roles">For your team</a>
+      </nav>
+
+      <div class="header-actions">
+        <button
+          mat-icon-button
+          type="button"
+          class="theme-button"
+          [matTooltip]="theme.dark() ? 'Use light theme' : 'Use dark theme'"
+          [attr.aria-label]="theme.dark() ? 'Use light theme' : 'Use dark theme'"
+          (click)="theme.toggle()"
+        >
+          <mat-icon>{{ theme.dark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+        @if (isLoggedIn()) {
+          <a mat-flat-button [routerLink]="primaryRoute()" class="header-cta">Open dashboard</a>
+        } @else {
+          <a mat-button routerLink="/auth/login" class="signin-link">Sign in</a>
+          <a mat-flat-button [routerLink]="primaryRoute()" class="header-cta">Start a project</a>
+        }
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow"
+          ><span class="eyebrow-dot"></span>Client + delivery, finally aligned</span
+        >
+        <h1 id="hero-title">
+          From first brief to final sign-off,
+          <span>without the guesswork.</span>
+        </h1>
+        <p class="hero-lead">
+          DevPortal gives clients and delivery teams one shared space to shape requirements, track
+          progress, resolve issues and approve the finished work.
+        </p>
+
+        <div class="hero-actions">
+          <a mat-flat-button [routerLink]="primaryRoute()" class="primary-cta">
+            {{ primaryLabel() }}
+            <mat-icon>arrow_forward</mat-icon>
+          </a>
+          @if (isLoggedIn()) {
+            <a mat-stroked-button routerLink="/projects" class="secondary-cta">Browse projects</a>
+          } @else {
+            <a mat-stroked-button routerLink="/auth/login" class="secondary-cta">Sign in</a>
+          }
+        </div>
+
+        <div class="hero-proof" aria-label="Platform highlights">
+          <span><mat-icon>check_circle</mat-icon>Private client workspaces</span>
+          <span><mat-icon>check_circle</mat-icon>Role-aware access</span>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="visual-glow"></div>
+
+        <div class="preview-shell">
+          <div class="preview-bar">
+            <span class="preview-dots"><i></i><i></i><i></i></span>
+            <span class="preview-address">devportal / website-redesign</span>
+          </div>
+
+          <div class="preview-content">
+            <div class="preview-heading">
+              <div class="preview-project">
+                <span class="preview-project-icon"><mat-icon>language</mat-icon></span>
+                <div>
+                  <small>Active project</small>
+                  <strong>Website redesign</strong>
+                </div>
+              </div>
+              <span class="status-pill"><span></span>On track</span>
+            </div>
+
+            <div class="progress-row">
+              <div class="progress-copy">
+                <span>Delivery progress</span>
+                <strong>72%</strong>
+              </div>
+              <div class="progress-track"><span></span></div>
+            </div>
+
+            <div class="mini-tasks">
+              <div class="mini-task is-done">
+                <mat-icon>check_circle</mat-icon>
+                <div><span>Design system</span><small>Completed</small></div>
+                <span class="task-tag">Design</span>
+              </div>
+              <div class="mini-task is-active">
+                <mat-icon>pending</mat-icon>
+                <div><span>Checkout flow</span><small>In progress · Dev One</small></div>
+                <span class="task-tag">Build</span>
+              </div>
+              <div class="mini-task">
+                <mat-icon>radio_button_unchecked</mat-icon>
+                <div><span>Client review</span><small>Due Friday</small></div>
+                <span class="task-tag">Review</span>
+              </div>
+            </div>
+
+            <div class="preview-footer">
+              <div class="avatar-stack">
+                <span>PM</span><span>D1</span><span>CL</span><span class="avatar-more">+3</span>
+              </div>
+              <span class="next-review"><mat-icon>event</mat-icon>Next review · Fri</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="floating-card comment-card">
+          <span class="floating-icon"><mat-icon>chat_bubble</mat-icon></span>
+          <div>
+            <strong>New client comment</strong>
+            <small>“The new checkout flow looks great.”</small>
+          </div>
+        </div>
+
+        <div class="floating-card approved-card">
+          <mat-icon>verified</mat-icon>
+          <div>
+            <strong>Milestone approved</strong>
+            <small>Design handoff · just now</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="role-strip" aria-label="Built for every role">
+      <div class="role-strip-inner">
+        <span class="role-label">Built for the whole team</span>
+        @for (role of roles; track role.title) {
+          <span class="role-chip"
+            ><mat-icon>{{ role.icon }}</mat-icon
+            >{{ role.title }}</span
+          >
+        }
+      </div>
+    </section>
+
+    <section id="features" class="section features" aria-labelledby="features-title">
+      <div class="section-heading">
+        <span class="eyebrow"><span class="eyebrow-dot"></span>One shared workspace</span>
+        <h2 id="features-title">Less chasing. <span>More shipping.</span></h2>
+        <p>
+          Replace scattered updates and disconnected documents with a delivery experience everyone
+          can understand at a glance.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        @for (feature of features; track feature.title) {
+          <article class="feature-card">
+            <div class="feature-top">
+              <span class="feature-icon"
+                ><mat-icon>{{ feature.icon }}</mat-icon></span
+              >
+              <span class="feature-tag">{{ feature.tag }}</span>
+            </div>
+            <h3>{{ feature.title }}</h3>
+            <p>{{ feature.description }}</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section id="how-it-works" class="section how-it-works" aria-labelledby="how-title">
+      <div class="section-heading">
+        <span class="eyebrow"><span class="eyebrow-dot"></span>How it works</span>
+        <h2 id="how-title">A clear path from idea to approval.</h2>
+        <p>No new process to learn. Just a visible, repeatable way to deliver great work.</p>
+      </div>
+
+      <div class="steps-grid">
+        @for (step of steps; track step.title; let index = $index) {
+          <article class="step-card">
+            <span class="step-number">0{{ index + 1 }}</span>
+            <span class="step-icon"
+              ><mat-icon>{{ step.icon }}</mat-icon></span
+            >
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.description }}</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section id="roles" class="section roles" aria-labelledby="roles-title">
+      <div class="roles-layout">
+        <div class="roles-copy">
+          <span class="eyebrow"><span class="eyebrow-dot"></span>Role-aware by design</span>
+          <h2 id="roles-title">Every role gets a focused view.</h2>
+          <p>
+            Clients see their projects. Developers see assigned work. Managers see the delivery
+            picture. Everyone sees only what they need.
+          </p>
+          <a
+            mat-stroked-button
+            [routerLink]="isLoggedIn() ? '/dashboard' : '/auth/login'"
+            class="text-cta"
+          >
+            Explore the workspace
+            <mat-icon>arrow_forward</mat-icon>
+          </a>
+        </div>
+
+        <div class="role-grid">
+          @for (role of roles; track role.title) {
+            <article class="role-card">
+              <span class="role-card-icon"
+                ><mat-icon>{{ role.icon }}</mat-icon></span
+              >
+              <div>
+                <h3>{{ role.title }}</h3>
+                <p>{{ role.description }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-wrap" aria-labelledby="cta-title">
+      <div class="cta-band">
+        <div>
+          <span class="cta-eyebrow">Ready when you are</span>
+          <h2 id="cta-title">Make the next project your smoothest one.</h2>
+          <p>Bring the brief. We will bring the clarity, momentum and a clean finish.</p>
+        </div>
+        <div class="cta-actions">
+          <a mat-flat-button [routerLink]="primaryRoute()" class="cta-primary">
+            {{ primaryLabel() }}
+          </a>
+          @if (!isLoggedIn()) {
+            <a mat-button routerLink="/auth/login" class="cta-secondary">Sign in</a>
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="brand" routerLink="/" aria-label="DevPortal home">
+          <span class="brand-mark"><mat-icon>hub</mat-icon></span>
+          <span class="brand-name">DevPortal</span>
+        </a>
+        <span>Client–developer delivery, in one place.</span>
+      </div>
+      <div class="footer-links">
+        <a routerLink="/auth/login">Sign in</a>
+        <a routerLink="/auth/register">Create account</a>
+      </div>
+      <span class="copyright">© {{ year }} DevPortal</span>
+    </div>
+  </footer>
+</div>

@@ -5,6 +5,12 @@ import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/landing/landing.component').then((module) => module.LandingComponent),
+  },
+  {
     path: 'auth',
     canActivate: [guestGuard],
     children: [
@@ -86,16 +92,16 @@ export const routes: Routes = [
               {
                 path: 'overview',
                 loadComponent: () =>
-                  import(
-                    './features/projects/project-detail/project-overview/project-overview.component'
-                  ).then((module) => module.ProjectOverviewComponent),
+                  import('./features/projects/project-detail/project-overview/project-overview.component').then(
+                    (module) => module.ProjectOverviewComponent,
+                  ),
               },
               {
                 path: 'activity',
                 loadComponent: () =>
-                  import(
-                    './features/projects/project-detail/project-activity/project-activity.component'
-                  ).then((module) => module.ProjectActivityComponent),
+                  import('./features/projects/project-detail/project-activity/project-activity.component').then(
+                    (module) => module.ProjectActivityComponent,
+                  ),
               },
               {
                 path: 'requirements',
