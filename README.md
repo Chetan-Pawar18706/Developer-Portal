@@ -33,7 +33,7 @@ Useful commands:
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Run the compiled API |
 | `npm test` | Run Jest tests |
-| `npm run seed` | Connect to MongoDB and sync model indexes |
+| `npm run seed` | Reset development data and seed demo users and projects |
 | `npm run lint` | Run ESLint |
 
 Health check: `GET http://localhost:5000/api/health`
@@ -44,6 +44,23 @@ Health check: `GET http://localhost:5000/api/health`
 
 Environment variables are validated at startup (`backend/src/config/env.ts`). Update
 `backend/.env` before running the server. `.env` is never committed.
+
+### Demo accounts
+
+Run `npm run seed` in `backend/` to reset the development database and load the demo
+accounts, projects and activity history. The seed script is blocked when
+`NODE_ENV=production`.
+
+| Name | Role | Email | Password |
+| --- | --- | --- | --- |
+| DevPortal Admin | admin | `admin@devpor.com` | `Admin@123` |
+| Chetan Pawar | pm | `chetanpawar18706@gmail.com` | `Chetan@123` |
+| Raghav Shastri | developer | `raghavshastri@gmail.com` | `raghav@123` |
+| Ishwari Kokankar | developer | `iswarikokankar@gmail.com` | `ishwari@123` |
+| Nikhil Sury | client | `nikhilsury@gmail.com` | `nikhil@123` |
+
+The seeded projects cover draft, submitted, active, on-hold and completed states so
+each role has something meaningful to review immediately.
 
 ## Frontend
 
@@ -84,7 +101,8 @@ backend/
     middleware/  auth, roles, validation, error handling
     services/    business logic
     sockets/     Socket.IO handlers
-    utils/       shared helpers and seed scripts
+    scripts/     seed and maintenance scripts
+    utils/       shared helpers
     types/       shared TypeScript types
   uploads/       private uploaded files (not committed)
 frontend/
