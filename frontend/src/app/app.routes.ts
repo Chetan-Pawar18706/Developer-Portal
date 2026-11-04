@@ -58,15 +58,120 @@ export const routes: Routes = [
       },
       {
         path: 'projects',
-        data: {
-          title: 'Projects',
-          icon: 'folder_open',
-          description: 'Create projects, track milestones and review delivery progress.',
-        },
-        loadComponent: () =>
-          import('./shared/components/placeholder-page/placeholder-page.component').then(
-            (module) => module.PlaceholderPageComponent,
-          ),
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () =>
+              import('./features/projects/project-list/project-list.component').then(
+                (module) => module.ProjectListComponent,
+              ),
+          },
+          {
+            path: 'new',
+            canActivate: [roleGuard(['admin', 'pm', 'client'])],
+            loadComponent: () =>
+              import('./features/projects/project-create/project-create.component').then(
+                (module) => module.ProjectCreateComponent,
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./features/projects/project-detail/project-detail.component').then(
+                (module) => module.ProjectDetailComponent,
+              ),
+            children: [
+              { path: '', pathMatch: 'full', redirectTo: 'overview' },
+              {
+                path: 'overview',
+                loadComponent: () =>
+                  import(
+                    './features/projects/project-detail/project-overview/project-overview.component'
+                  ).then((module) => module.ProjectOverviewComponent),
+              },
+              {
+                path: 'activity',
+                loadComponent: () =>
+                  import(
+                    './features/projects/project-detail/project-activity/project-activity.component'
+                  ).then((module) => module.ProjectActivityComponent),
+              },
+              {
+                path: 'requirements',
+                data: {
+                  title: 'Requirements',
+                  icon: 'assignment',
+                  description: 'Project requirements will be managed here in the next part.',
+                },
+                loadComponent: () =>
+                  import('./shared/components/placeholder-page/placeholder-page.component').then(
+                    (module) => module.PlaceholderPageComponent,
+                  ),
+              },
+              {
+                path: 'tasks',
+                data: {
+                  title: 'Tasks',
+                  icon: 'task_alt',
+                  description: 'Task planning and delivery tracking are coming next.',
+                },
+                loadComponent: () =>
+                  import('./shared/components/placeholder-page/placeholder-page.component').then(
+                    (module) => module.PlaceholderPageComponent,
+                  ),
+              },
+              {
+                path: 'issues',
+                data: {
+                  title: 'Issues',
+                  icon: 'bug_report',
+                  description: 'Project issue tracking will be available in a later part.',
+                },
+                loadComponent: () =>
+                  import('./shared/components/placeholder-page/placeholder-page.component').then(
+                    (module) => module.PlaceholderPageComponent,
+                  ),
+              },
+              {
+                path: 'files',
+                data: {
+                  title: 'Files',
+                  icon: 'folder_shared',
+                  description: 'Shared project files and deliverables will appear here.',
+                },
+                loadComponent: () =>
+                  import('./shared/components/placeholder-page/placeholder-page.component').then(
+                    (module) => module.PlaceholderPageComponent,
+                  ),
+              },
+              {
+                path: 'discussion',
+                data: {
+                  title: 'Discussion',
+                  icon: 'forum',
+                  description: 'Project conversations and comment threads are coming soon.',
+                },
+                loadComponent: () =>
+                  import('./shared/components/placeholder-page/placeholder-page.component').then(
+                    (module) => module.PlaceholderPageComponent,
+                  ),
+              },
+              {
+                path: 'reports',
+                data: {
+                  title: 'Reports',
+                  icon: 'insights',
+                  description: 'Delivery reports and client summaries will be added later.',
+                },
+                loadComponent: () =>
+                  import('./shared/components/placeholder-page/placeholder-page.component').then(
+                    (module) => module.PlaceholderPageComponent,
+                  ),
+              },
+            ],
+          },
+        ],
       },
       {
         path: 'requirements',

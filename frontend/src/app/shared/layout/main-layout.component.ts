@@ -44,7 +44,7 @@ const NAV_ITEMS: readonly NavItem[] = [
     label: 'Projects',
     icon: 'folder_open',
     route: '/projects',
-    roles: ['admin', 'pm', 'client'],
+    roles: ['admin', 'pm', 'developer', 'client'],
   },
   {
     label: 'Requirements',

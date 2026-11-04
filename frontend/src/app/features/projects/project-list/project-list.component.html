@@ -1,0 +1,215 @@
+<section class="projects-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Delivery portfolio</p>
+      <h1>Projects</h1>
+      <p class="subtitle">Track client work from draft through delivery sign-off.</p>
+    </div>
+
+    @if (canCreate()) {
+      <button mat-flat-button type="button" routerLink="/projects/new">
+        <mat-icon>add</mat-icon>
+        New project
+      </button>
+    }
+  </header>
+
+  <mat-card appearance="outlined" class="filters-card">
+    <mat-card-content class="filters">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+        <mat-label>Search projects</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [formControl]="searchControl" placeholder="Title or description" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Status</mat-label>
+        <mat-select
+          [value]="store.filters().status"
+          (selectionChange)="onStatusChange($event.value)"
+        >
+          <mat-option value="">All statuses</mat-option>
+          @for (status of statuses; track status) {
+            <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <span class="result-count">
+        {{ store.total() }} {{ store.total() === 1 ? 'project' : 'projects' }}
+      </span>
+
+      <mat-button-toggle-group
+        class="view-toggle"
+        [value]="view()"
+        (change)="view.set($event.value)"
+        hideSingleSelectionIndicator
+        aria-label="Project view"
+      >
+        <mat-button-toggle value="cards" aria-label="Card view">
+          <mat-icon>grid_view</mat-icon>
+        </mat-button-toggle>
+        <mat-button-toggle value="table" aria-label="Table view">
+          <mat-icon>view_list</mat-icon>
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="results">
+    @if (store.loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    @if (store.loading() && store.entities().length === 0) {
+      <app-loading-skeleton [rows]="6" />
+    } @else if (store.entities().length === 0) {
+      <mat-card appearance="outlined">
+        <app-empty-state
+          icon="workspaces"
+          title="No projects yet"
+          message="Projects you create or join will appear here. Try clearing the filters or start a new project."
+        >
+          @if (canCreate()) {
+            <button mat-stroked-button type="button" routerLink="/projects/new">
+              Create a project
+            </button>
+          }
+        </app-empty-state>
+      </mat-card>
+    } @else if (view() === 'cards') {
+      <div class="project-grid">
+        @for (project of store.entities(); track project.id) {
+          <mat-card appearance="outlined" class="project-card">
+            <mat-card-header>
+              <mat-card-title>
+                <a [routerLink]="['/projects', project.id, 'overview']">{{ project.title }}</a>
+              </mat-card-title>
+              <mat-card-subtitle>{{ project.client.name }}</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <div class="badge-row">
+                <app-status-badge
+                  [status]="project.status"
+                  [label]="statusLabel(project.status)"
+                />
+                <span class="priority" [class]="'priority-' + project.priority">
+                  {{ priorityLabel(project.priority) }}
+                </span>
+              </div>
+
+              <p class="description">{{ project.description }}</p>
+
+              <div class="card-meta">
+                <span>
+                  <mat-icon>event</mat-icon>
+                  {{ project.dueDate ? (project.dueDate | date: 'MMM d, y') : 'No due date' }}
+                </span>
+                <span>
+                  <mat-icon>payments</mat-icon>
+                  {{ project.budget | currency: 'INR' : 'symbol' : '1.0-0' }}
+                </span>
+                <span [matTooltip]="memberNames(project)">
+                  <mat-icon>group</mat-icon>
+                  {{ project.members.length }} members
+                </span>
+              </div>
+
+              @if (project.tags.length > 0) {
+                <div class="tag-row">
+                  @for (tag of project.tags; track tag) {
+                    <span class="tag">{{ tag }}</span>
+                  }
+                </div>
+              }
+            </mat-card-content>
+
+            <mat-card-actions align="end">
+              <a mat-button [routerLink]="['/projects', project.id, 'overview']">Open project</a>
+            </mat-card-actions>
+          </mat-card>
+        }
+      </div>
+    } @else {
+      <mat-card appearance="outlined" class="table-card">
+        <div class="table-scroll">
+          <table mat-table [dataSource]="store.entities()" class="projects-table">
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>Project</th>
+              <td mat-cell *matCellDef="let project">
+                <a class="project-link" [routerLink]="['/projects', project.id, 'overview']">
+                  {{ project.title }}
+                </a>
+                <span class="table-subtitle">{{ project.client.name }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="client">
+              <th mat-header-cell *matHeaderCellDef>Client</th>
+              <td mat-cell *matCellDef="let project">
+                <div class="person-cell">
+                  <app-user-avatar
+                    [name]="project.client.name"
+                    [avatar]="project.client.avatar"
+                    size="sm"
+                  />
+                  <span>{{ project.client.name }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let project">
+                <app-status-badge
+                  [status]="project.status"
+                  [label]="statusLabel(project.status)"
+                />
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="priority">
+              <th mat-header-cell *matHeaderCellDef>Priority</th>
+              <td mat-cell *matCellDef="let project">
+                <span class="priority" [class]="'priority-' + project.priority">
+                  {{ priorityLabel(project.priority) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="dueDate">
+              <th mat-header-cell *matHeaderCellDef>Due</th>
+              <td mat-cell *matCellDef="let project" class="muted-cell">
+                {{ project.dueDate ? (project.dueDate | date: 'MMM d, y') : '—' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="members">
+              <th mat-header-cell *matHeaderCellDef>Team</th>
+              <td mat-cell *matCellDef="let project" class="muted-cell">
+                <span [matTooltip]="memberNames(project)">
+                  {{ project.members.length }} members
+                </span>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayColumns"></tr>
+          </table>
+        </div>
+      </mat-card>
+    }
+  </div>
+
+  @if (store.total() > 0) {
+    <mat-paginator
+      [length]="store.total()"
+      [pageIndex]="store.filters().page - 1"
+      [pageSize]="store.filters().limit"
+      [pageSizeOptions]="[6, 12, 24]"
+      (page)="onPage($event)"
+      showFirstLastButtons
+    />
+  }
+</section>

@@ -1,0 +1,66 @@
+<section class="detail-page">
+  <a mat-button type="button" routerLink="/projects" class="back-link">
+    <mat-icon>arrow_back</mat-icon>
+    All projects
+  </a>
+
+  @if (store.loading() && !store.selected()) {
+    <app-loading-skeleton [rows]="7" />
+  } @else {
+    @if (store.selected(); as project) {
+      <header class="project-header">
+        <div class="title-block">
+          <div class="title-row">
+            <h1>{{ project.title }}</h1>
+            <app-status-badge
+              [status]="project.status"
+              [label]="statusLabels[project.status]"
+            />
+          </div>
+          <p class="subtitle">{{ project.client.name }} · {{ priorityLabels[project.priority] }} priority</p>
+        </div>
+
+        <div class="header-meta">
+          <span>
+            <mat-icon>event</mat-icon>
+            Due {{ project.dueDate ? (project.dueDate | date: 'MMM d, y') : 'not set' }}
+          </span>
+          <span>
+            <mat-icon>payments</mat-icon>
+            {{ project.budget | currency: 'INR' : 'symbol' : '1.0-0' }}
+          </span>
+          <span [matTooltip]="memberLabel(project)">
+            <mat-icon>group</mat-icon>
+            {{ project.members.length }} members
+          </span>
+        </div>
+      </header>
+
+      <nav mat-tab-nav-bar [tabPanel]="tabPanel" class="project-tabs">
+        @for (tab of tabs; track tab.path) {
+          <a
+            mat-tab-link
+            [routerLink]="['/projects', project.id, tab.path]"
+            routerLinkActive
+            #link="routerLinkActive"
+            [active]="link.isActive"
+          >
+            {{ tab.label }}
+          </a>
+        }
+      </nav>
+
+      <mat-tab-nav-panel #tabPanel>
+        <router-outlet />
+      </mat-tab-nav-panel>
+    } @else {
+      <app-empty-state
+        icon="folder_off"
+        title="Project not available"
+        message="This project may have been archived or you may not have access to it."
+      >
+        <a mat-stroked-button routerLink="/projects">Back to projects</a>
+      </app-empty-state>
+    }
+  }
+</section>

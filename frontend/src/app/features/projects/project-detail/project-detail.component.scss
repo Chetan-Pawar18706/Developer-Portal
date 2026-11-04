@@ -1,0 +1,66 @@
+.detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.back-link {
+  align-self: flex-start;
+  margin-left: -0.75rem;
+}
+
+.project-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    letter-spacing: -0.02em;
+  }
+}
+
+.subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.82rem;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  mat-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+    font-size: 1.05rem;
+  }
+}
+
+.project-tabs {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  background: transparent;
+}
+
+mat-tab-nav-panel {
+  display: block;
+  padding-top: 1rem;
+}

@@ -1,0 +1,262 @@
+<section class="create-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">New engagement</p>
+      <h1>Create project</h1>
+      <p class="subtitle">Set the brief, choose the delivery team and review before publishing.</p>
+    </div>
+  </header>
+
+  <mat-card appearance="outlined" class="stepper-card">
+    <mat-card-content>
+      @if (serverError()) {
+        <div class="form-error-banner" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ serverError() }}</span>
+        </div>
+      }
+
+      <mat-stepper linear #stepper>
+        <mat-step [stepControl]="form" label="Basic info">
+          <form [formGroup]="form" class="step-form" novalidate>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Project title</mat-label>
+              <input matInput formControlName="title" placeholder="Customer portal redesign" />
+              @if (form.controls.title.touched && form.controls.title.hasError('required')) {
+                <mat-error>Project title is required.</mat-error>
+              }
+              @if (form.controls.title.touched && form.controls.title.hasError('minlength')) {
+                <mat-error>Use at least 3 characters.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Brief</mat-label>
+              <textarea
+                matInput
+                formControlName="description"
+                rows="5"
+                placeholder="Describe the goals, scope and expected outcome."
+              ></textarea>
+              @if (
+                form.controls.description.touched &&
+                form.controls.description.hasError('required')
+              ) {
+                <mat-error>A project brief is required.</mat-error>
+              }
+              @if (
+                form.controls.description.touched &&
+                form.controls.description.hasError('minlength')
+              ) {
+                <mat-error>Use at least 10 characters.</mat-error>
+              }
+            </mat-form-field>
+
+            @if (isStaff()) {
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Client</mat-label>
+                <mat-select formControlName="clientId">
+                  @for (client of clientOptions(); track client.id) {
+                    <mat-option [value]="client.id">{{ client.name }}</mat-option>
+                  }
+                </mat-select>
+                @if (form.controls.clientId.touched && form.controls.clientId.hasError('required')) {
+                  <mat-error>Select the client who owns this project.</mat-error>
+                }
+                @if (clientOptions().length === 0) {
+                  <mat-hint>No active clients are available yet.</mat-hint>
+                }
+              </mat-form-field>
+            }
+
+            <div class="field-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Priority</mat-label>
+                <mat-select formControlName="priority">
+                  @for (priority of priorities; track priority) {
+                    <mat-option [value]="priority">{{ priorityLabels[priority] }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Budget (INR)</mat-label>
+                <input matInput type="number" min="0" formControlName="budget" />
+                @if (form.controls.budget.hasError('min')) {
+                  <mat-error>Budget cannot be negative.</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <div class="field-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Start date</mat-label>
+                <input matInput type="date" formControlName="startDate" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Due date</mat-label>
+                <input matInput type="date" formControlName="dueDate" />
+                @if (form.hasError('dateRange')) {
+                  <mat-error>Due date must be on or after the start date.</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Tags</mat-label>
+              <input matInput formControlName="tags" placeholder="angular, design, phase-1" />
+              <mat-hint>Separate tags with commas.</mat-hint>
+            </mat-form-field>
+
+            <div class="step-actions">
+              <a mat-button routerLink="/projects">Cancel</a>
+              <button mat-flat-button type="button" matStepperNext [disabled]="form.invalid">
+                Continue
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <mat-step label="Members">
+          @if (isStaff()) {
+            <p class="step-lead">
+              Pick the delivery team. Member roles follow each person's workspace role and can be
+              adjusted later from the project overview.
+            </p>
+
+            <mat-selection-list
+              class="member-list"
+              [multiple]="true"
+              (selectionChange)="onMembersChange($event)"
+            >
+              @for (user of memberOptions(); track user.id) {
+                <mat-list-option [value]="user.id">
+                  <div class="member-option">
+                    <app-user-avatar [name]="user.name" [avatar]="user.avatar" size="sm" />
+                    <div class="member-copy">
+                      <strong>{{ user.name }}</strong>
+                      <span>{{ roleLabels[user.role] }}</span>
+                    </div>
+                  </div>
+                </mat-list-option>
+              } @empty {
+                <p class="muted">No additional team members are available yet.</p>
+              }
+            </mat-selection-list>
+          } @else {
+            <div class="client-note">
+              <mat-icon>groups</mat-icon>
+              <div>
+                <strong>Delivery team</strong>
+                <p>
+                  Your project manager will assign the delivery team after reviewing the brief.
+                  You can follow progress from the project workspace.
+                </p>
+              </div>
+            </div>
+          }
+
+          <div class="step-actions">
+            <button mat-button type="button" matStepperPrevious>Back</button>
+            <button mat-flat-button type="button" matStepperNext>Continue</button>
+          </div>
+        </mat-step>
+
+        <mat-step label="Review">
+          <div class="review">
+            <h2>{{ form.controls.title.value }}</h2>
+            <p class="review-description">{{ form.controls.description.value }}</p>
+
+            <dl class="review-grid">
+              <div>
+                <dt>Priority</dt>
+                <dd>{{ priorityLabels[form.controls.priority.value] }}</dd>
+              </div>
+              <div>
+                <dt>Budget</dt>
+                <dd>
+                  {{
+                    form.controls.budget.value
+                      | currency: 'INR' : 'symbol' : '1.0-0'
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>Start</dt>
+                <dd>
+                  {{
+                    form.controls.startDate.value
+                      ? (form.controls.startDate.value | date: 'MMM d, y')
+                      : 'Not set'
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>Due</dt>
+                <dd>
+                  {{
+                    form.controls.dueDate.value
+                      ? (form.controls.dueDate.value | date: 'MMM d, y')
+                      : 'Not set'
+                  }}
+                </dd>
+              </div>
+            </dl>
+
+            <div class="review-section">
+              <h3>Client</h3>
+              @if (isStaff()) {
+                <p>{{ selectedClientName() }}</p>
+              } @else {
+                <p>{{ auth.currentUser()?.name }}</p>
+              }
+            </div>
+
+            <div class="review-section">
+              <h3>Team</h3>
+              @if (selectedMemberSummary().length > 0) {
+                <ul class="review-members">
+                  @for (member of selectedMemberSummary(); track member.userId) {
+                    <li>
+                      {{ memberName(member.userId) }}
+                      <span>{{ roleLabels[member.role] }}</span>
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="muted">No additional members selected.</p>
+              }
+            </div>
+
+            @if (tags().length > 0) {
+              <div class="review-section">
+                <h3>Tags</h3>
+                <div class="tag-row">
+                  @for (tag of tags(); track tag) {
+                    <span class="tag">{{ tag }}</span>
+                  }
+                </div>
+              </div>
+            }
+
+            <mat-divider />
+          </div>
+
+          <div class="step-actions">
+            <button mat-button type="button" matStepperPrevious [disabled]="submitting()">
+              Back
+            </button>
+            <button mat-flat-button type="button" [disabled]="submitting()" (click)="submit()">
+              @if (submitting()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                Create project
+              }
+            </button>
+          </div>
+        </mat-step>
+      </mat-stepper>
+    </mat-card-content>
+  </mat-card>
+</section>

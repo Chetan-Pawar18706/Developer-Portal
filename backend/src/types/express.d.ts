@@ -1,3 +1,4 @@
+import type { ProjectDocument } from '../models/project.model';
 import type { UserRole } from '../models/user.model';
 
 declare global {
@@ -7,6 +8,7 @@ declare global {
         id: string;
         role: UserRole;
       };
+      project?: ProjectDocument;
     }
   }
 }

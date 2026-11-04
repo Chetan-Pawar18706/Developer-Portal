@@ -1,0 +1,204 @@
+@if (store.selected(); as project) {
+  <div class="overview-grid">
+    <div class="main-column">
+      <mat-card appearance="outlined" class="section-card">
+        <mat-card-header>
+          <mat-card-title>Project brief</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="description">{{ project.description }}</p>
+
+          @if (project.tags.length > 0) {
+            <div class="tag-row">
+              @for (tag of project.tags; track tag) {
+                <span class="tag">{{ tag }}</span>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="section-card">
+        <mat-card-header>
+          <mat-card-title>Delivery</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <dl class="detail-grid">
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <app-status-badge
+                  [status]="project.status"
+                  [label]="statusLabels[project.status]"
+                />
+              </dd>
+            </div>
+            <div>
+              <dt>Health</dt>
+              <dd>
+                <app-status-badge
+                  [status]="project.health"
+                  [label]="healthLabels[project.health]"
+                />
+              </dd>
+            </div>
+            <div>
+              <dt>Priority</dt>
+              <dd>{{ priorityLabels[project.priority] }}</dd>
+            </div>
+            <div>
+              <dt>Budget</dt>
+              <dd>{{ project.budget | currency: 'INR' : 'symbol' : '1.0-0' }}</dd>
+            </div>
+            <div>
+              <dt>Start date</dt>
+              <dd>{{ project.startDate ? (project.startDate | date: 'MMM d, y') : 'Not set' }}</dd>
+            </div>
+            <div>
+              <dt>Due date</dt>
+              <dd>{{ project.dueDate ? (project.dueDate | date: 'MMM d, y') : 'Not set' }}</dd>
+            </div>
+          </dl>
+
+          @if (project.status === 'completed' && project.deliverySignOff.signedAt) {
+            <mat-divider class="divider" />
+            <div class="sign-off">
+              <div class="sign-off-header">
+                <mat-icon>verified</mat-icon>
+                <strong>Delivery signed off</strong>
+                <span>{{ project.deliverySignOff.signedAt | date: 'MMM d, y' }}</span>
+              </div>
+
+              @if (project.deliverySignOff.rating) {
+                <div class="rating" aria-label="Delivery rating">
+                  @for (star of ratingStars; track star) {
+                    <mat-icon>
+                      {{ star <= (project.deliverySignOff.rating ?? 0) ? 'star' : 'star_border' }}
+                    </mat-icon>
+                  }
+                </div>
+              }
+
+              @if (project.deliverySignOff.feedback) {
+                <p>{{ project.deliverySignOff.feedback }}</p>
+              }
+
+              @if (project.deliverySignOff.note) {
+                <p class="muted">{{ project.deliverySignOff.note }}</p>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="section-card">
+        <mat-card-header>
+          <mat-card-title>Team</mat-card-title>
+          <mat-card-subtitle>{{ project.members.length }} people on this project</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <ul class="member-list">
+            @for (member of project.members; track member.user.id) {
+              <li>
+                <app-user-avatar
+                  [name]="member.user.name"
+                  [avatar]="member.user.avatar"
+                  size="sm"
+                />
+                <div class="member-copy">
+                  <strong>{{ member.user.name }}</strong>
+                  <span>{{ member.user.email }}</span>
+                </div>
+                <span class="member-role">{{ roleLabels[member.role] }}</span>
+                @if (member.user.id === project.client.id) {
+                  <span class="owner-chip">Client owner</span>
+                } @else if (canManageMembers()) {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    [matTooltip]="'Remove ' + member.user.name"
+                    [attr.aria-label]="'Remove ' + member.user.name"
+                    (click)="removeMember(project, member.user.id, member.user.name)"
+                  >
+                    <mat-icon>person_remove</mat-icon>
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+
+          <button
+            *appHasRole="['admin', 'pm']"
+            mat-stroked-button
+            type="button"
+            class="add-member"
+            (click)="addMember()"
+          >
+            <mat-icon>person_add</mat-icon>
+            Add member
+          </button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <aside class="side-column">
+      <mat-card appearance="outlined" class="section-card">
+        <mat-card-header>
+          <mat-card-title>Next step</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (actions().length > 0) {
+            <div class="action-list">
+              @for (action of actions(); track action.status) {
+                <button
+                  mat-flat-button
+                  type="button"
+                  [color]="action.status === 'archived' ? 'warn' : 'primary'"
+                  (click)="runAction(action)"
+                >
+                  <mat-icon>{{ action.icon }}</mat-icon>
+                  {{ action.label }}
+                </button>
+              }
+            </div>
+          } @else {
+            <p class="muted">
+              No status actions are available for your role at this stage of the project.
+            </p>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="section-card">
+        <mat-card-header>
+          <mat-card-title>Client</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="client-card">
+            <app-user-avatar
+              [name]="project.client.name"
+              [avatar]="project.client.avatar"
+              size="md"
+            />
+            <div>
+              <strong>{{ project.client.name }}</strong>
+              <a [href]="'mailto:' + project.client.email">{{ project.client.email }}</a>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="section-card activity-teaser">
+        <mat-card-content>
+          <mat-icon>history</mat-icon>
+          <div>
+            <strong>Activity timeline</strong>
+            <p>Every status change, member update and sign-off is recorded.</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </aside>
+  </div>
+} @else {
+  <app-empty-state icon="folder_off" title="Project not loaded" message="Return to the project list and try again." />
+}
