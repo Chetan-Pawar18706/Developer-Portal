@@ -22,7 +22,11 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
-import type { Project, ProjectListQuery } from '../../core/models/project.model';
+import type {
+  Project,
+  ProjectListQuery,
+  ProjectUserSummary,
+} from '../../core/models/project.model';
 import {
   TASK_PRIORITIES,
   TASK_PRIORITY_LABELS,
@@ -114,6 +118,23 @@ export class GlobalTasksComponent implements OnInit {
   readonly rangeEnd = computed(() =>
     Math.min(this.filters().page * this.filters().limit, this.total()),
   );
+  readonly availableUsers = computed<readonly ProjectUserSummary[]>(() => {
+    const projectId = this.filters().projectId;
+    const projects = projectId
+      ? this.projects().filter((project) => project.id === projectId)
+      : this.projects();
+    const users = new Map<string, ProjectUserSummary>();
+
+    for (const project of projects) {
+      users.set(project.client.id, project.client);
+
+      for (const member of project.members) {
+        users.set(member.user.id, member.user);
+      }
+    }
+
+    return [...users.values()].sort((left, right) => left.name.localeCompare(right.name));
+  });
 
   constructor() {
     this.searchControl.valueChanges
@@ -131,7 +152,11 @@ export class GlobalTasksComponent implements OnInit {
   }
 
   onProjectChange(projectId: string): void {
-    this.setFilters({ projectId, page: 1 });
+    this.setFilters({ projectId, assignee: undefined, page: 1 });
+  }
+
+  onAssigneeChange(assigneeId: string): void {
+    this.setFilters({ assignee: assigneeId || undefined, page: 1 });
   }
 
   onStatusChange(status: TaskStatus | ''): void {

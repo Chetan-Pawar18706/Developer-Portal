@@ -39,6 +39,19 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>User</mat-label>
+        <mat-select
+          [value]="filters().assignee ?? ''"
+          (selectionChange)="onAssigneeChange($event.value)"
+        >
+          <mat-option value="">All users</mat-option>
+          @for (user of availableUsers(); track user.id) {
+            <mat-option [value]="user.id">{{ user.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Status</mat-label>
         <mat-select [value]="filters().status ?? ''" (selectionChange)="onStatusChange($event.value)">
           <mat-option value="">All statuses</mat-option>

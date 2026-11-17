@@ -137,7 +137,7 @@ There is no dev-server proxy: the browser calls the backend directly at
 (`CLIENT_URL`, credentials enabled).
 
 The global **Tasks** page at `/tasks` lists tasks across every project the signed-in user
-can access, with project, assignee, status and priority filters. Selecting a task opens
+can access, with project, user, status and priority filters. Selecting a task opens
 its project board with the task dialog. Project tasks are also available in the project
 detail **Tasks** tab. That workspace has board, sortable list and due-date calendar views,
 role-aware filters, optimistic drag-and-drop ordering, a task editor with checklist and
