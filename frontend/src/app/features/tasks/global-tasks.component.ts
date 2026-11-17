@@ -191,7 +191,7 @@ export class GlobalTasksComponent implements OnInit {
     const query: ProjectListQuery = {
       search: '',
       page: 1,
-      limit: 200,
+      limit: 100,
       sortBy: 'title',
       sortOrder: 'asc',
     };
