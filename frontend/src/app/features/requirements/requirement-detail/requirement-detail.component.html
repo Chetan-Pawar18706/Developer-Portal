@@ -213,14 +213,89 @@
             <mat-card appearance="outlined" class="section-card">
               <mat-card-header>
                 <mat-card-title>Linked tasks</mat-card-title>
-                <mat-card-subtitle>Delivery work will be linked here in Part 7</mat-card-subtitle>
+                <mat-card-subtitle>
+                  @if (taskProgress(); as progress) {
+                    @if (progress.total > 0) {
+                      {{ progress.completed }} of {{ progress.total }} complete
+                    } @else {
+                      No delivery work linked yet
+                    }
+                  } @else {
+                    Delivery progress for this requirement
+                  }
+                </mat-card-subtitle>
               </mat-card-header>
               <mat-card-content>
-                <app-empty-state
-                  icon="task_alt"
-                  title="No linked tasks yet"
-                  message="Tasks created from this requirement will appear here once task planning is available."
-                />
+                @if (progressLoading() && !taskProgress()) {
+                  <div class="task-progress-loading">
+                    <mat-progress-spinner diameter="28" mode="indeterminate" />
+                  </div>
+                } @else if (taskProgress(); as progress) {
+                  @if (progress.total > 0) {
+                    <div class="task-progress-summary">
+                      <div class="task-progress-head">
+                        <span class="task-progress-value">{{ progress.percent }}%</span>
+                        <span class="muted">
+                          {{ progress.loggedHours }} h logged of
+                          {{ progress.totalEstimateHours }} h estimated
+                        </span>
+                      </div>
+                      <mat-progress-bar mode="determinate" [value]="progress.percent" />
+                      <div class="task-progress-stats">
+                        @for (status of taskStatuses; track status) {
+                          @if (progress.byStatus[status] > 0) {
+                            <span class="task-stat">
+                              <span class="task-stat-dot" [class]="'dot-' + status"></span>
+                              {{ taskStatusLabels[status] }} {{ progress.byStatus[status] }}
+                            </span>
+                          }
+                        }
+                        @if (progress.overdue > 0) {
+                          <span class="task-stat danger">
+                            <mat-icon>schedule</mat-icon>
+                            {{ progress.overdue }} overdue
+                          </span>
+                        }
+                      </div>
+                    </div>
+
+                    <ul class="linked-task-list">
+                      @for (task of progress.tasks; track task.id) {
+                        <li>
+                          <button type="button" class="linked-task" (click)="openTask(task)">
+                            <app-status-badge
+                              [status]="task.status"
+                              [label]="taskStatusLabels[task.status]"
+                            />
+                            <span class="linked-task-title">{{ task.title }}</span>
+                            <span class="linked-task-meta">
+                              {{ task.assignee?.name || 'Unassigned' }}
+                            </span>
+                            @if (task.dueDate) {
+                              <span class="linked-task-meta">
+                                <mat-icon>event</mat-icon>
+                                {{ task.dueDate | date: 'MMM d' }}
+                              </span>
+                            }
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <app-empty-state
+                      icon="task_alt"
+                      title="No linked tasks yet"
+                      message="Create a task from the project task board and link it to this requirement to track delivery progress."
+                    >
+                      <a
+                        mat-stroked-button
+                        [routerLink]="['/projects', projectId(), 'tasks']"
+                      >
+                        Open task board
+                      </a>
+                    </app-empty-state>
+                  }
+                }
               </mat-card-content>
             </mat-card>
           </div>

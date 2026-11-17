@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as projectController from '../controllers/project.controller';
 import * as requirementController from '../controllers/requirement.controller';
+import * as taskController from '../controllers/task.controller';
 import { allow } from '../middleware/allow';
 import { authenticate } from '../middleware/auth';
 import { projectAccess } from '../middleware/projectAccess';
@@ -20,6 +21,11 @@ import {
   listRequirementsQuerySchema,
   projectRequirementParamSchema,
 } from './requirement.schemas';
+import {
+  createTaskSchema,
+  listTasksQuerySchema,
+  taskIdParamSchema,
+} from './task.schemas';
 
 export const projectRouter = Router();
 
@@ -57,6 +63,21 @@ projectRouter.post(
   }),
   projectAccess,
   asyncHandler(requirementController.createProjectRequirement),
+);
+
+projectRouter.get(
+  '/:id/tasks',
+  validate({ params: taskIdParamSchema, query: listTasksQuerySchema }),
+  projectAccess,
+  asyncHandler(taskController.listProjectTasks),
+);
+
+projectRouter.post(
+  '/:id/tasks',
+  allow('admin', 'pm'),
+  validate({ params: taskIdParamSchema, body: createTaskSchema }),
+  projectAccess,
+  asyncHandler(taskController.createTask),
 );
 
 projectRouter.get(

@@ -1,3 +1,136 @@
 :host {
   display: block;
 }
+
+.task-progress-loading {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.task-progress-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 0.9rem;
+}
+
+.task-progress-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.task-progress-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.task-progress-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+}
+
+.task-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.7rem;
+
+  mat-icon {
+    width: 0.85rem;
+    height: 0.85rem;
+    font-size: 0.85rem;
+  }
+
+  &.danger {
+    color: var(--status-blocked);
+  }
+}
+
+.task-stat-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--status-draft);
+}
+
+.dot-todo {
+  background: var(--status-draft);
+}
+
+.dot-in_progress {
+  background: var(--status-review);
+}
+
+.dot-in_review {
+  background: var(--status-review);
+}
+
+.dot-blocked {
+  background: var(--status-blocked);
+}
+
+.dot-done {
+  background: var(--status-done);
+}
+
+.linked-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linked-task {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0.55rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-low);
+    border-color: var(--mat-sys-primary);
+  }
+
+  app-status-badge {
+    flex-shrink: 0;
+  }
+}
+
+.linked-task-title {
+  flex: 1;
+  min-width: 10rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.linked-task-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.68rem;
+
+  mat-icon {
+    width: 0.8rem;
+    height: 0.8rem;
+    font-size: 0.8rem;
+  }
+}

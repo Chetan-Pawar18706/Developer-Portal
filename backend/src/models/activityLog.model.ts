@@ -11,11 +11,24 @@ export const ACTIVITY_ACTIONS = [
   'requirement_updated',
   'requirement_status_changed',
   'requirement_change_requested',
+  'task_created',
+  'task_updated',
+  'task_status_changed',
+  'task_deleted',
+  'task_time_logged',
+  'task_subtasks_updated',
+  'task_client_reviewed',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 
-export const ACTIVITY_ENTITY_TYPES = ['project', 'member', 'status', 'requirement'] as const;
+export const ACTIVITY_ENTITY_TYPES = [
+  'project',
+  'member',
+  'status',
+  'requirement',
+  'task',
+] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];
 
 export interface ActivityLogAttributes {

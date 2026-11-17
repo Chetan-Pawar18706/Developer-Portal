@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import type { UserRole } from '../models/user.model';
@@ -19,7 +19,10 @@ export function signAccessToken(userId: string, role: UserRole): string {
 
 export function signRefreshToken(userId: string, role: UserRole): string {
   const payload: TokenPayload = { sub: userId, role, type: 'refresh' };
-  return jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: REFRESH_TOKEN_TTL });
+  return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
+    expiresIn: REFRESH_TOKEN_TTL,
+    jwtid: randomUUID(),
+  });
 }
 
 export function verifyAccessToken(token: string): TokenPayload {

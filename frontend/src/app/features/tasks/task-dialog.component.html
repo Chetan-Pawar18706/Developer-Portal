@@ -1,0 +1,389 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon>{{ isCreate() ? 'add_task' : 'task_alt' }}</mat-icon>
+  <span class="title-text">
+    {{ isCreate() ? 'New task' : task()?.title || 'Task details' }}
+  </span>
+</h2>
+
+<mat-dialog-content class="task-dialog-content">
+  @if (error(); as message) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ message }}</span>
+    </div>
+  }
+
+  @if (task(); as currentTask) {
+    <div class="summary-strip">
+      <app-status-badge
+        [status]="currentTask.status"
+        [label]="statusLabels[currentTask.status]"
+      />
+      <span [class]="'priority-pill priority-' + currentTask.priority">
+        <mat-icon>flag</mat-icon>
+        {{ priorityLabels[currentTask.priority] }}
+      </span>
+
+      @if (currentTask.dueDate) {
+        <span class="summary-item">
+          <mat-icon>event</mat-icon>
+          Due {{ currentTask.dueDate | date: 'MMM d, y' }}
+        </span>
+      }
+
+      @if (currentTask.assignee; as assignee) {
+        <span class="summary-item">
+          <app-user-avatar
+            [name]="assignee.name"
+            [avatar]="assignee.avatar"
+            size="sm"
+          />
+          {{ assignee.name }}
+        </span>
+      } @else {
+        <span class="summary-item muted">
+          <mat-icon>person_off</mat-icon>
+          Unassigned
+        </span>
+      }
+    </div>
+
+    @if (currentTask.status === 'in_review' && !canEdit()) {
+      <div class="review-banner" role="status">
+        <mat-icon>rate_review</mat-icon>
+        <div>
+          <strong>Ready for your review</strong>
+          <p>
+            Approve the work if it meets the requirement, or request specific changes from the
+            delivery team.
+          </p>
+        </div>
+      </div>
+    }
+
+    @if (currentTask.clientReview.status !== 'pending') {
+      <div
+        class="review-result"
+        [class.changes]="currentTask.clientReview.status === 'changes_requested'"
+      >
+        <mat-icon>
+          {{
+            currentTask.clientReview.status === 'approved'
+              ? 'verified'
+              : 'published_with_changes'
+          }}
+        </mat-icon>
+        <div>
+          <strong>{{ clientReviewLabels[currentTask.clientReview.status] }}</strong>
+          @if (currentTask.clientReview.by; as reviewer) {
+            <span> by {{ reviewer.name }}</span>
+          }
+          @if (currentTask.clientReview.at) {
+            <span> · {{ currentTask.clientReview.at | date: 'MMM d, y' }}</span>
+          }
+          @if (currentTask.clientReview.note) {
+            <p>{{ currentTask.clientReview.note }}</p>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  @if (canEdit()) {
+    <form [formGroup]="form" class="task-form" novalidate>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Task title</mat-label>
+        <input matInput formControlName="title" maxlength="160" placeholder="What needs to be done?" />
+        @if (form.controls.title.hasError('required')) {
+          <mat-error>A title is required.</mat-error>
+        }
+        @if (form.controls.title.hasError('minlength')) {
+          <mat-error>Use at least 3 characters.</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Priority</mat-label>
+          <mat-select formControlName="priority">
+            @for (priority of priorities; track priority) {
+              <mat-option [value]="priority">{{ priorityLabels[priority] }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        @if (!isNew()) {
+          <mat-form-field appearance="outline">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              @for (status of statuses; track status) {
+                <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+
+        @if (canShowAssignment()) {
+          <mat-form-field appearance="outline">
+            <mat-label>Assignee</mat-label>
+            <mat-select formControlName="assigneeId">
+              <mat-option value="">Unassigned</mat-option>
+              @for (member of data.project.members; track member.user.id) {
+                <mat-option [value]="member.user.id">
+                  {{ member.user.name }} · {{ member.role }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Linked requirement</mat-label>
+            <mat-select formControlName="requirementId">
+              <mat-option value="">No linked requirement</mat-option>
+              @if (requirementsLoading()) {
+                <mat-option disabled>Loading requirements…</mat-option>
+              }
+              @for (requirement of requirements(); track requirement.id) {
+                <mat-option [value]="requirement.id">{{ requirement.title }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+
+        <mat-form-field appearance="outline">
+          <mat-label>Estimate (hours)</mat-label>
+          <input matInput type="number" formControlName="estimateHours" min="0" step="0.5" />
+          @if (form.controls.estimateHours.hasError('min')) {
+            <mat-error>Estimate cannot be negative.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Due date</mat-label>
+          <input matInput type="date" formControlName="dueDate" />
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Labels</mat-label>
+        <input matInput formControlName="labels" placeholder="frontend, bug, api" />
+        <mat-hint>Comma-separated labels help with filtering.</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Description</mat-label>
+        <textarea
+          matInput
+          rows="4"
+          formControlName="description"
+          placeholder="Add implementation notes, acceptance details, or links"
+        ></textarea>
+      </mat-form-field>
+    </form>
+  } @else if (task(); as currentTask) {
+    <section class="read-only-section">
+      <h3>Description</h3>
+      <p class="description">{{ currentTask.description || 'No description has been added yet.' }}</p>
+
+      <dl class="read-only-meta">
+        <div>
+          <dt>Estimate</dt>
+          <dd>{{ currentTask.estimateHours }} h</dd>
+        </div>
+        <div>
+          <dt>Reporter</dt>
+          <dd>{{ currentTask.reporter?.name || 'Unknown' }}</dd>
+        </div>
+        <div>
+          <dt>Created</dt>
+          <dd>{{ currentTask.createdAt | date: 'MMM d, y' }}</dd>
+        </div>
+        @if (currentTask.requirement; as requirement) {
+          <div>
+            <dt>Requirement</dt>
+            <dd>
+              <a
+                mat-button
+                [routerLink]="['/projects', data.projectId, 'requirements', requirement.id]"
+              >
+                {{ requirement.title }}
+              </a>
+            </dd>
+          </div>
+        }
+      </dl>
+    </section>
+  }
+
+  @if (task(); as currentTask) {
+    <mat-divider />
+
+    <section class="detail-section">
+      <div class="section-heading">
+        <h3>Checklist</h3>
+        <span class="muted">
+          {{ completedSubtasks() }}/{{ subtasks().length }} complete
+        </span>
+      </div>
+
+      @if (subtasks().length > 0) {
+        <mat-progress-bar
+          mode="determinate"
+          [value]="subtasks().length ? (completedSubtasks() / subtasks().length) * 100 : 0"
+        />
+      }
+
+      @if (subtasks().length > 0) {
+        <ul class="subtask-list">
+          @for (subtask of subtasks(); track $index) {
+            <li>
+              <mat-checkbox
+                [checked]="subtask.done"
+                [disabled]="!canEdit()"
+                (change)="toggleSubtask($index)"
+              >
+                {{ subtask.title }}
+              </mat-checkbox>
+              @if (canEdit()) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  aria-label="Remove checklist item"
+                  (click)="removeSubtask($index)"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">No checklist items yet.</p>
+      }
+
+      @if (canEdit()) {
+        <div class="inline-add">
+          <mat-form-field appearance="outline" class="inline-add-field">
+            <mat-label>Add a checklist item</mat-label>
+            <input
+              matInput
+              [value]="newSubtask()"
+              (input)="onSubtaskInput($event)"
+              (keydown.enter)="addSubtask(); $event.preventDefault()"
+              maxlength="200"
+            />
+          </mat-form-field>
+          <button mat-stroked-button type="button" (click)="addSubtask()">Add</button>
+        </div>
+      }
+    </section>
+
+    <mat-divider />
+
+    <section class="detail-section">
+      <div class="section-heading">
+        <h3>Time tracking</h3>
+        <span class="muted">
+          {{ loggedHours() }} h logged of {{ currentTask.estimateHours }} h estimated
+        </span>
+      </div>
+
+      <mat-progress-bar mode="determinate" [value]="loggedPercent()" />
+
+      @if (currentTask.timeLogs.length > 0) {
+        <ul class="time-list">
+          @for (log of currentTask.timeLogs; track $index) {
+            <li>
+              <span class="time-hours">{{ log.hours }} h</span>
+              <span class="time-note">{{ log.note || 'No note' }}</span>
+              <span class="muted">{{ log.user.name }} · {{ log.date | date: 'MMM d' }}</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">No time has been logged yet.</p>
+      }
+
+      @if (canEdit()) {
+        <form [formGroup]="timeForm" class="time-form" novalidate>
+          <mat-form-field appearance="outline">
+            <mat-label>Hours</mat-label>
+            <input matInput type="number" formControlName="hours" min="0.25" max="24" step="0.25" />
+            @if (timeForm.controls.hours.invalid) {
+              <mat-error>Enter between 0.25 and 24 hours.</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Date</mat-label>
+            <input matInput type="date" formControlName="date" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="time-note-field">
+            <mat-label>Note</mat-label>
+            <input matInput formControlName="note" placeholder="What did you work on?" />
+          </mat-form-field>
+
+          <button
+            mat-flat-button
+            type="button"
+            class="log-button"
+            [disabled]="timeForm.invalid"
+            (click)="submitTimeLog()"
+          >
+            Log time
+          </button>
+        </form>
+      }
+    </section>
+
+    <mat-divider />
+
+    <section class="detail-section">
+      <div class="section-heading">
+        <h3>Client review</h3>
+        @if (currentTask.clientReview.status === 'pending') {
+          <span class="muted">Waiting for a task in review</span>
+        }
+      </div>
+      <p class="muted review-copy">
+        {{
+          currentTask.clientReview.status === 'pending'
+            ? 'Move the task to In review when the work is ready for the client to approve.'
+            : clientReviewLabels[currentTask.clientReview.status]
+        }}
+      </p>
+    </section>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  @if (canDelete()) {
+    <button mat-button type="button" color="warn" (click)="deleteTask()">
+      <mat-icon>delete_outline</mat-icon>
+      Delete
+    </button>
+  }
+
+  <span class="spacer"></span>
+
+  <button mat-button type="button" (click)="cancel()">Close</button>
+
+  @if (canReview()) {
+    <button mat-stroked-button type="button" (click)="requestChanges()">
+      <mat-icon>published_with_changes</mat-icon>
+      Request changes
+    </button>
+    <button mat-flat-button type="button" (click)="approveTask()">
+      <mat-icon>verified</mat-icon>
+      Approve task
+    </button>
+  }
+
+  @if (canEdit()) {
+    <button mat-flat-button type="button" [disabled]="saving()" (click)="save()">
+      <mat-icon>{{ isNew() ? 'add' : 'save' }}</mat-icon>
+      {{ isNew() ? 'Create task' : 'Save changes' }}
+    </button>
+  }
+</mat-dialog-actions>

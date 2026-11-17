@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as requirementController from '../controllers/requirement.controller';
+import * as taskController from '../controllers/task.controller';
 import { allow } from '../middleware/allow';
 import { authenticate } from '../middleware/auth';
 import { requirementAccess } from '../middleware/requirementAccess';
@@ -21,6 +22,13 @@ requirementRouter.get(
   '/',
   validate({ query: listAllRequirementsQuerySchema }),
   asyncHandler(requirementController.listRequirements),
+);
+
+requirementRouter.get(
+  '/:id/progress',
+  validate({ params: requirementIdParamSchema }),
+  requirementAccess,
+  asyncHandler(taskController.getRequirementProgress),
 );
 
 requirementRouter.get(

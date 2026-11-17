@@ -6,6 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -20,13 +21,21 @@ import {
   type Requirement,
   type RequirementStatus,
 } from '../../../core/models/requirement.model';
+import {
+  TASK_STATUSES,
+  TASK_STATUS_LABELS,
+  type RequirementTaskProgress,
+  type Task,
+} from '../../../core/models/task.model';
 import { AuthService } from '../../../core/services/auth.service';
+import { TaskService } from '../../../core/services/task.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 import { getErrorMessage } from '../../../shared/utils/http-error';
 import { ProjectStore } from '../../projects/project.store';
+import { TaskDialogComponent, type TaskDialogData } from '../../tasks/task-dialog.component';
 import {
   ChangeRequestDialogComponent,
   type ChangeRequestDialogData,
@@ -114,6 +123,7 @@ function buildActions(
     MatIconModule,
     MatDividerModule,
     MatSidenavModule,
+    MatProgressBarModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
     StatusBadgeComponent,
@@ -132,17 +142,22 @@ export class RequirementDetailComponent {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly taskService = inject(TaskService);
 
   readonly projectId = signal('');
   readonly requirementId = signal('');
   readonly drawerOpen = signal(false);
   readonly acting = signal(false);
   readonly actionError = signal<string | null>(null);
+  readonly taskProgress = signal<RequirementTaskProgress | null>(null);
+  readonly progressLoading = signal(false);
 
   readonly stepper = REQUIREMENT_STEPPER_STATUSES;
   readonly statusLabels = REQUIREMENT_STATUS_LABELS;
   readonly priorityLabels = REQUIREMENT_PRIORITY_LABELS;
   readonly typeLabels = REQUIREMENT_TYPE_LABELS;
+  readonly taskStatuses = TASK_STATUSES;
+  readonly taskStatusLabels = TASK_STATUS_LABELS;
 
   readonly isClientOwner = computed(() => {
     const project = this.projectStore.selected();
@@ -208,11 +223,52 @@ export class RequirementDetailComponent {
       this.store.clearSelected();
       this.actionError.set(null);
       this.drawerOpen.set(false);
+      this.taskProgress.set(null);
 
       if (requirementId) {
         this.store.loadOne(requirementId);
+        this.loadTaskProgress(requirementId);
       }
     });
+  }
+
+  loadTaskProgress(requirementId: string): void {
+    this.progressLoading.set(true);
+
+    this.taskService.getRequirementProgress(requirementId).subscribe({
+      next: (progress) => {
+        this.taskProgress.set(progress);
+        this.progressLoading.set(false);
+      },
+      error: () => {
+        this.taskProgress.set(null);
+        this.progressLoading.set(false);
+      },
+    });
+  }
+
+  openTask(task: Task): void {
+    const project = this.projectStore.selected();
+
+    if (!project) {
+      return;
+    }
+
+    this.dialog
+      .open<TaskDialogComponent, TaskDialogData, boolean>(TaskDialogComponent, {
+        data: { project, projectId: project.id, task },
+        width: '46rem',
+        maxWidth: '96vw',
+        maxHeight: '92vh',
+        autoFocus: 'dialog',
+        restoreFocus: true,
+      })
+      .afterClosed()
+      .subscribe((changed) => {
+        if (changed) {
+          this.loadTaskProgress(this.requirementId());
+        }
+      });
   }
 
   stepState(index: number): StepState {

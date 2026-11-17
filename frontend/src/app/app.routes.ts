@@ -143,14 +143,9 @@ export const routes: Routes = [
               },
               {
                 path: 'tasks',
-                data: {
-                  title: 'Tasks',
-                  icon: 'task_alt',
-                  description: 'Task planning and delivery tracking are coming next.',
-                },
                 loadComponent: () =>
-                  import('./shared/components/placeholder-page/placeholder-page.component').then(
-                    (module) => module.PlaceholderPageComponent,
+                  import('./features/tasks/task-board.component').then(
+                    (module) => module.TaskBoardComponent,
                   ),
               },
               {
