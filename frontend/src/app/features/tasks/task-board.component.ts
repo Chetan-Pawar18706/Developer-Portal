@@ -26,6 +26,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime } from 'rxjs';
 import type { Project } from '../../core/models/project.model';
 import {
@@ -39,6 +40,7 @@ import {
   type TaskStatus,
 } from '../../core/models/task.model';
 import { AuthService } from '../../core/services/auth.service';
+import { TaskService } from '../../core/services/task.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../shared/components/loading-skeleton/loading-skeleton.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
@@ -126,6 +128,9 @@ export class TaskBoardComponent {
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly taskService = inject(TaskService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly statuses = TASK_STATUSES;
   readonly statusLabels = TASK_STATUS_LABELS;
@@ -138,6 +143,7 @@ export class TaskBoardComponent {
   readonly calendarMonth = signal(startOfMonth(new Date()));
   readonly busyTaskId = signal<string | null>(null);
   private loadedProjectId = '';
+  private readonly pendingTaskId = signal<string | null>(null);
   private dragging = false;
 
   readonly project = computed<Project | null>(() => this.projectStore.selected());
@@ -267,6 +273,18 @@ export class TaskBoardComponent {
     });
 
     effect(() => {
+      const taskId = this.pendingTaskId();
+      const project = this.project();
+
+      if (!taskId || !project) {
+        return;
+      }
+
+      this.pendingTaskId.set(null);
+      this.openTaskById(taskId, project);
+    });
+
+    effect(() => {
       this.dataSource.data = [...this.store.entities()];
     });
 
@@ -291,6 +309,14 @@ export class TaskBoardComponent {
           dueTo: value.dueTo,
         });
       });
+
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const taskId = params.get('task');
+
+      if (taskId) {
+        this.pendingTaskId.set(taskId);
+      }
+    });
   }
 
   setView(event: MatButtonToggleChange): void {
@@ -346,6 +372,25 @@ export class TaskBoardComponent {
           this.refresh();
         }
       });
+  }
+
+  private openTaskById(taskId: string, project: Project): void {
+    this.taskService.get(taskId).subscribe({
+      next: (task) => {
+        if (task.projectId !== project.id) {
+          return;
+        }
+
+        this.openTask(task);
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { task: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      },
+      error: () => undefined,
+    });
   }
 
   openTask(task: Task): void {

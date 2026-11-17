@@ -1,6 +1,9 @@
 import type { ClientSession, QueryFilter } from 'mongoose';
 import { Types } from 'mongoose';
-import type { ProjectDocument } from '../models/project.model';
+import {
+  Project,
+  type ProjectDocument,
+} from '../models/project.model';
 import {
   Requirement,
   type RequirementDocument,
@@ -20,6 +23,7 @@ import type {
   AddTimeLogInput,
   ClientReviewInput,
   CreateTaskInput,
+  ListAllTasksQuery,
   ListTasksQuery,
   MoveTaskInput,
   UpdateSubtasksInput,
@@ -27,6 +31,7 @@ import type {
 } from '../routes/task.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { buildProjectVisibilityFilter } from './project.service';
 
 const TASK_POPULATE = [
   { path: 'project', select: 'title' },
@@ -504,13 +509,10 @@ async function applyTaskMove(
   }
 }
 
-export async function listProjectTasks(
-  projectId: string,
-  query: ListTasksQuery,
-): Promise<TaskListResult> {
-  const filter: QueryFilter<TaskAttributes> = {
-    project: new Types.ObjectId(projectId),
-  };
+function buildTaskListFilter(
+  query: ListTasksQuery | ListAllTasksQuery,
+): QueryFilter<TaskAttributes> {
+  const filter: QueryFilter<TaskAttributes> = {};
 
   if (query.search) {
     const pattern = new RegExp(escapeRegExp(query.search), 'i');
@@ -553,6 +555,13 @@ export async function listProjectTasks(
     filter.dueDate = dueRange;
   }
 
+  return filter;
+}
+
+async function runTaskList(
+  filter: QueryFilter<TaskAttributes>,
+  query: ListTasksQuery,
+): Promise<TaskListResult> {
   const direction = query.sortOrder === 'asc' ? 1 : -1;
   const skip = (query.page - 1) * query.limit;
 
@@ -571,6 +580,40 @@ export async function listProjectTasks(
     page: query.page,
     limit: query.limit,
   };
+}
+
+export async function listProjectTasks(
+  projectId: string,
+  query: ListTasksQuery,
+): Promise<TaskListResult> {
+  const filter = buildTaskListFilter(query);
+  filter.project = new Types.ObjectId(projectId);
+  return runTaskList(filter, query);
+}
+
+export async function listAllTasks(
+  actor: TaskActor,
+  query: ListAllTasksQuery,
+): Promise<TaskListResult> {
+  const projectFilter = buildProjectVisibilityFilter(actor);
+
+  if (query.projectId) {
+    projectFilter._id = new Types.ObjectId(query.projectId);
+  }
+
+  const visibleProjects = await Project.find(projectFilter).select('_id');
+
+  if (query.projectId && visibleProjects.length === 0) {
+    throw new ApiError(404, 'Project not found');
+  }
+
+  if (visibleProjects.length === 0) {
+    return { data: [], total: 0, page: query.page, limit: query.limit };
+  }
+
+  const filter = buildTaskListFilter(query);
+  filter.project = { $in: visibleProjects.map((project) => project._id) };
+  return runTaskList(filter, query);
 }
 
 export async function getTask(taskId: string): Promise<PublicTask> {

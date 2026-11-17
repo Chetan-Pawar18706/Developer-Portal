@@ -33,7 +33,8 @@ Useful commands:
 | `npm run build` | Compile TypeScript to `dist/` |
 | `npm start` | Run the compiled API |
 | `npm test` | Run Jest tests |
-| `npm run seed` | Reset development data and seed demo users, projects, requirements and activity |
+| `npm run seed` | Reset development data and seed demo users, projects, requirements, tasks and activity |
+| `npm run seed:tasks` | Add realistic demo tasks to the existing database without deleting data |
 | `npm run lint` | Run ESLint |
 
 Health check: `GET http://localhost:5000/api/health`
@@ -48,8 +49,10 @@ Environment variables are validated at startup (`backend/src/config/env.ts`). Up
 ### Demo accounts
 
 Run `npm run seed` in `backend/` to reset the development database and load the demo
-accounts, projects, requirements, version history and activity history. The seed script
-is blocked when `NODE_ENV=production`.
+accounts, projects, requirements, tasks, version history and activity history. To add
+the same realistic task set to a database you already have, run `npm run seed:tasks`
+instead; it is idempotent and never deletes existing data. Both scripts are blocked when
+`NODE_ENV=production`.
 
 | Name | Role | Email | Password |
 | --- | --- | --- | --- |
@@ -89,6 +92,7 @@ tasks from their own projects and cannot edit them.
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
+| `GET` | `/api/tasks` | List tasks across every project the user can access, with optional `projectId` and the same filters |
 | `GET` | `/api/projects/:id/tasks` | List project tasks with search, assignee, status, priority, label, due-date and pagination filters |
 | `POST` | `/api/projects/:id/tasks` | Create a task in `todo` (admin or pm) |
 | `GET` | `/api/tasks/:id` | Get a task |
@@ -132,11 +136,13 @@ There is no dev-server proxy: the browser calls the backend directly at
 `http://localhost:5000`, and the backend allows the Angular origin via CORS
 (`CLIENT_URL`, credentials enabled).
 
-Project tasks are available in the project detail **Tasks** tab. The workspace has board,
-sortable list and due-date calendar views, role-aware filters, optimistic drag-and-drop
-ordering, a task editor with checklist and time logging, and client review controls for
-tasks in review. Requirement detail pages show linked task progress and let users open
-the task editor directly.
+The global **Tasks** page at `/tasks` lists tasks across every project the signed-in user
+can access, with project, assignee, status and priority filters. Selecting a task opens
+its project board with the task dialog. Project tasks are also available in the project
+detail **Tasks** tab. That workspace has board, sortable list and due-date calendar views,
+role-aware filters, optimistic drag-and-drop ordering, a task editor with checklist and
+time logging, and client review controls for tasks in review. Requirement detail pages
+show linked task progress and let users open the task editor directly.
 
 ## Project structure
 

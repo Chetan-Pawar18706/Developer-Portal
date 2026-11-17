@@ -18,7 +18,9 @@ import {
   type RequirementStatus,
   type RequirementType,
 } from '../models/requirement.model';
+import { Task } from '../models/task.model';
 import { User, hashPassword, type UserDocument, type UserRole } from '../models/user.model';
+import { seedDemoTasks } from './demo-tasks';
 
 interface SeedUser {
   name: string;
@@ -662,6 +664,7 @@ async function seed(): Promise<void> {
     await connectDatabase();
 
     await ActivityLog.deleteMany({});
+    await Task.deleteMany({});
     await Requirement.deleteMany({});
     await Project.deleteMany({});
     await User.deleteMany({});
@@ -876,8 +879,10 @@ async function seed(): Promise<void> {
       }
     }
 
+    const taskResult = await seedDemoTasks();
+
     console.log(
-      `Seeded ${createdUsers.length} users, ${createdProjects.length} projects and ${createdRequirements.length} requirements.`,
+      `Seeded ${createdUsers.length} users, ${createdProjects.length} projects, ${createdRequirements.length} requirements and ${taskResult.created} tasks.`,
     );
     console.log('\nDemo accounts:');
 

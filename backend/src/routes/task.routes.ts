@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import {
   addTimeLogSchema,
   clientReviewSchema,
+  listAllTasksQuerySchema,
   moveTaskSchema,
   taskIdParamSchema,
   updateSubtasksSchema,
@@ -17,6 +18,12 @@ import {
 export const taskRouter = Router();
 
 taskRouter.use(authenticate);
+
+taskRouter.get(
+  '/',
+  validate({ query: listAllTasksQuerySchema }),
+  asyncHandler(taskController.listAllTasks),
+);
 
 taskRouter.get(
   '/:id',

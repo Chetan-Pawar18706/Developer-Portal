@@ -11,6 +11,7 @@
     "start": "node dist/server.js",
     "test": "jest --runInBand",
     "seed": "ts-node src/scripts/seed.ts",
+    "seed:tasks": "ts-node src/scripts/seed-tasks.ts",
     "lint": "eslint ."
   },
   "keywords": [],

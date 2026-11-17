@@ -219,8 +219,8 @@ export const routes: Routes = [
           description: 'Browse the tasks assigned to you and log your progress.',
         },
         loadComponent: () =>
-          import('./shared/components/placeholder-page/placeholder-page.component').then(
-            (module) => module.PlaceholderPageComponent,
+          import('./features/tasks/global-tasks.component').then(
+            (module) => module.GlobalTasksComponent,
           ),
       },
       {

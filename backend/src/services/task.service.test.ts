@@ -1,7 +1,8 @@
+import { Types } from 'mongoose';
 import { Project, type ProjectDocument } from '../models/project.model';
 import { Task, type TaskDocument } from '../models/task.model';
 import type { UserDocument } from '../models/user.model';
-import type { CreateTaskInput } from '../routes/task.schemas';
+import type { CreateTaskInput, ListAllTasksQuery } from '../routes/task.schemas';
 import { createUser } from '../tests/factories';
 import {
   clearTestDatabase,
@@ -11,6 +12,7 @@ import {
 import { ApiError } from '../utils/ApiError';
 import {
   createTask,
+  listAllTasks,
   moveTask,
   reviewTaskAsClient,
   updateTask,
@@ -36,6 +38,18 @@ function taskInput(
     dueDate: null,
     labels: [],
     subtasks: [],
+    ...overrides,
+  };
+}
+
+function allTasksQuery(
+  overrides: Partial<ListAllTasksQuery> = {},
+): ListAllTasksQuery {
+  return {
+    page: 1,
+    limit: 50,
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
     ...overrides,
   };
 }
@@ -216,5 +230,48 @@ describe('task permissions', () => {
 
     expect(changesRequested.status).toBe('in_progress');
     expect(changesRequested.clientReview.status).toBe('changes_requested');
+  });
+});
+
+describe('global task listing', () => {
+  it('returns only tasks from projects visible to the actor', async () => {
+    await createTask(project, { id: pm.id, role: 'pm' }, taskInput('Visible task'));
+    const outsider = await createUser({ email: 'outsider@example.com', role: 'client' });
+
+    const clientResult = await listAllTasks(
+      { id: client.id, role: 'client' },
+      allTasksQuery(),
+    );
+    expect(clientResult.total).toBe(1);
+    expect(clientResult.data[0]?.title).toBe('Visible task');
+
+    const pmResult = await listAllTasks({ id: pm.id, role: 'pm' }, allTasksQuery());
+    expect(pmResult.total).toBe(1);
+
+    const outsiderResult = await listAllTasks(
+      { id: outsider.id, role: 'client' },
+      allTasksQuery(),
+    );
+    expect(outsiderResult.total).toBe(0);
+    expect(outsiderResult.data).toEqual([]);
+  });
+
+  it('honours the project filter within visible projects', async () => {
+    await createTask(project, { id: pm.id, role: 'pm' }, taskInput('Filtered project task'));
+
+    const result = await listAllTasks(
+      { id: client.id, role: 'client' },
+      allTasksQuery({ projectId: project.id }),
+    );
+    expect(result.total).toBe(1);
+    expect(result.data[0]?.projectId).toBe(project.id);
+
+    const missingProject = new Types.ObjectId().toString();
+    await expect(
+      listAllTasks(
+        { id: client.id, role: 'client' },
+        allTasksQuery({ projectId: missingProject }),
+      ),
+    ).rejects.toThrow(ApiError);
   });
 });

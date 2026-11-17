@@ -6,6 +6,7 @@ import type {
   AddTimeLogInput,
   ClientReviewInput,
   CreateTaskInput,
+  ListAllTasksQuery,
   ListTasksQuery,
   MoveTaskInput,
   UpdateSubtasksInput,
@@ -51,6 +52,15 @@ export async function listProjectTasks(req: Request, res: Response): Promise<voi
   const result = await taskService.listProjectTasks(
     requireProject(req).id,
     req.query as unknown as ListTasksQuery,
+  );
+
+  sendPaginated(res, result.data, result.total, result.page, result.limit);
+}
+
+export async function listAllTasks(req: Request, res: Response): Promise<void> {
+  const result = await taskService.listAllTasks(
+    requireActor(req),
+    req.query as unknown as ListAllTasksQuery,
   );
 
   sendPaginated(res, result.data, result.total, result.page, result.limit);

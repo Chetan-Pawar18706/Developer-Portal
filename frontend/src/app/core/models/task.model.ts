@@ -115,6 +115,10 @@ export interface TaskListQuery extends Omit<
   dueTo?: string;
 }
 
+export interface GlobalTaskListQuery extends TaskListQuery {
+  projectId?: string;
+}
+
 export interface CreateTaskRequest {
   title: string;
   description: string;

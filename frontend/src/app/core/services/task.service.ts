@@ -7,6 +7,7 @@ import type {
   AddTimeLogRequest,
   ClientReviewRequest,
   CreateTaskRequest,
+  GlobalTaskListQuery,
   MoveTaskRequest,
   RequirementTaskProgress,
   Task,
@@ -25,6 +26,14 @@ export class TaskService {
   list(projectId: string, query: TaskListQuery): Observable<PaginatedData<Task>> {
     return this.http
       .get<ApiResponse<PaginatedData<Task>>>(`${this.projectBaseUrl}/${projectId}/tasks`, {
+        params: this.buildListParams(query),
+      })
+      .pipe(map((response) => response.data));
+  }
+
+  listAll(query: GlobalTaskListQuery): Observable<PaginatedData<Task>> {
+    return this.http
+      .get<ApiResponse<PaginatedData<Task>>>(this.baseUrl, {
         params: this.buildListParams(query),
       })
       .pipe(map((response) => response.data));
@@ -86,12 +95,16 @@ export class TaskService {
       .pipe(map((response) => response.data.progress));
   }
 
-  private buildListParams(query: TaskListQuery): HttpParams {
+  private buildListParams(query: GlobalTaskListQuery): HttpParams {
     let params = new HttpParams()
       .set('page', query.page)
       .set('limit', query.limit)
       .set('sortBy', query.sortBy)
       .set('sortOrder', query.sortOrder);
+
+    if (query.projectId) {
+      params = params.set('projectId', query.projectId);
+    }
 
     if (query.search) {
       params = params.set('search', query.search);

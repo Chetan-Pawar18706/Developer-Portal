@@ -20,31 +20,43 @@ export const taskIdParamSchema = z.object({
   id: objectIdSchema,
 });
 
-export const listTasksQuerySchema = z
-  .object({
-    search: z.string().trim().max(200).optional(),
-    assignee: objectIdSchema.optional(),
-    label: z.string().trim().max(40).optional(),
-    priority: z.enum(TASK_PRIORITIES).optional(),
-    status: z.enum(TASK_STATUSES).optional(),
-    requirementId: objectIdSchema.optional(),
-    dueFrom: z.coerce.date().optional(),
-    dueTo: z.coerce.date().optional(),
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(200).default(50),
-    sortBy: z
-      .enum(['order', 'createdAt', 'updatedAt', 'dueDate', 'title', 'priority', 'status'])
-      .default('order'),
-    sortOrder: z.enum(['asc', 'desc']).default('asc'),
+const listTasksBaseSchema = z.object({
+  search: z.string().trim().max(200).optional(),
+  assignee: objectIdSchema.optional(),
+  label: z.string().trim().max(40).optional(),
+  priority: z.enum(TASK_PRIORITIES).optional(),
+  status: z.enum(TASK_STATUSES).optional(),
+  requirementId: objectIdSchema.optional(),
+  dueFrom: z.coerce.date().optional(),
+  dueTo: z.coerce.date().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  sortBy: z
+    .enum(['order', 'createdAt', 'updatedAt', 'dueDate', 'title', 'priority', 'status'])
+    .default('order'),
+  sortOrder: z.enum(['asc', 'desc']).default('asc'),
+});
+
+function hasValidDueRange(value: {
+  dueFrom?: Date;
+  dueTo?: Date;
+}): boolean {
+  return !value.dueFrom || !value.dueTo || value.dueFrom.getTime() <= value.dueTo.getTime();
+}
+
+export const listTasksQuerySchema = listTasksBaseSchema.refine(hasValidDueRange, {
+  message: 'The due range start must be before the end',
+  path: ['dueFrom'],
+});
+
+export const listAllTasksQuerySchema = listTasksBaseSchema
+  .extend({
+    projectId: objectIdSchema.optional(),
   })
-  .refine(
-    (value) =>
-      !value.dueFrom || !value.dueTo || value.dueFrom.getTime() <= value.dueTo.getTime(),
-    {
-      message: 'The due range start must be before the end',
-      path: ['dueFrom'],
-    },
-  );
+  .refine(hasValidDueRange, {
+    message: 'The due range start must be before the end',
+    path: ['dueFrom'],
+  });
 
 export const createTaskSchema = z.object({
   title: z.string().trim().min(3).max(160),
@@ -103,6 +115,7 @@ export const clientReviewSchema = z
   );
 
 export type ListTasksQuery = z.infer<typeof listTasksQuerySchema>;
+export type ListAllTasksQuery = z.infer<typeof listAllTasksQuerySchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type MoveTaskInput = z.infer<typeof moveTaskSchema>;
