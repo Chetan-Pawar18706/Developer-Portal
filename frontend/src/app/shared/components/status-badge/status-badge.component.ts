@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-type StatusTone = 'success' | 'warning' | 'danger' | 'neutral';
+export type StatusTone = 'success' | 'warning' | 'danger' | 'neutral';
 
 const TONE_BY_STATUS: Record<string, StatusTone> = {
   done: 'success',
@@ -20,6 +20,10 @@ const TONE_BY_STATUS: Record<string, StatusTone> = {
   clarification: 'warning',
   review: 'warning',
   pending: 'warning',
+  on_hold: 'warning',
+  'on-hold': 'warning',
+  changes_requested: 'danger',
+  'changes-requested': 'danger',
   submitted: 'warning',
   in_progress: 'warning',
   'in-progress': 'warning',
@@ -39,6 +43,10 @@ const TONE_BY_STATUS: Record<string, StatusTone> = {
   backlog: 'neutral',
   archived: 'neutral',
 };
+
+export function statusTone(status: string): StatusTone {
+  return TONE_BY_STATUS[status.trim().toLowerCase()] ?? 'neutral';
+}
 
 @Component({
   selector: 'app-status-badge',
@@ -105,9 +113,7 @@ export class StatusBadgeComponent {
   readonly status = input.required<string>();
   readonly label = input<string | null>(null);
 
-  readonly tone = computed<StatusTone>(
-    () => TONE_BY_STATUS[this.status().trim().toLowerCase()] ?? 'neutral',
-  );
+  readonly tone = computed<StatusTone>(() => statusTone(this.status()));
 
   readonly displayLabel = computed(() => {
     const override = this.label();

@@ -74,8 +74,15 @@ export const updateProjectStatusSchema = z.object({
   feedback: z.string().trim().max(2000).optional(),
 });
 
+export const signOffProjectSchema = z.object({
+  note: z.string().trim().max(1000).optional(),
+  rating: z.number().int().min(1).max(5),
+  feedback: z.string().trim().max(2000).default(''),
+});
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
 export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>;
 export type AddProjectMemberInput = z.infer<typeof addProjectMemberSchema>;
 export type UpdateProjectStatusInput = z.infer<typeof updateProjectStatusSchema>;
+export type SignOffProjectInput = z.infer<typeof signOffProjectSchema>;

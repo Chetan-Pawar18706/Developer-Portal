@@ -8,6 +8,7 @@ import type {
   ProjectFilters,
   ProjectPriority,
   ProjectStatus,
+  SignOffProjectRequest,
   UpdateProjectStatusRequest,
 } from '../../core/models/project.model';
 import { getErrorMessage } from '../../shared/utils/http-error';
@@ -153,6 +154,15 @@ export class ProjectStore {
     return this.projectService
       .updateStatus(projectId, input)
       .pipe(tap((project) => this.applyProject(project)));
+  }
+
+  signOff(projectId: string, input: SignOffProjectRequest): Observable<Project> {
+    return this.projectService.signOff(projectId, input).pipe(
+      tap((project) => {
+        this.applyProject(project);
+        this.loadActivity(projectId);
+      }),
+    );
   }
 
   addMember(projectId: string, member: AddProjectMemberRequest): Observable<Project> {

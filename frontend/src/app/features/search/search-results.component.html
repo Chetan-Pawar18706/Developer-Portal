@@ -1,0 +1,95 @@
+<section class="search-page" aria-labelledby="search-heading">
+  <header class="search-header">
+    <div>
+      <h1 id="search-heading">Search workspace</h1>
+      <p class="subtitle">Find projects, requirements, tasks, issues and files you can access.</p>
+    </div>
+    <a mat-stroked-button routerLink="/dashboard">
+      <mat-icon>arrow_back</mat-icon>
+      Back to dashboard
+    </a>
+  </header>
+
+  <mat-card appearance="outlined" class="search-card">
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+        <mat-label>Search your workspace</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input
+          matInput
+          [formControl]="searchControl"
+          type="search"
+          autocomplete="off"
+          placeholder="Try a project name, requirement or file"
+          aria-label="Search your workspace"
+        />
+        @if (query()) {
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            aria-label="Clear search"
+            (click)="clear()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      @if (!canSearch()) {
+        <app-empty-state
+          icon="search"
+          title="Start typing to search"
+          message="Enter at least two characters to search across your projects."
+        />
+      } @else if (loading()) {
+        <div class="loading-panel" role="status" aria-live="polite">
+          <app-loading-skeleton [rows]="5" />
+        </div>
+      } @else if (error(); as message) {
+        <app-empty-state icon="cloud_off" title="Search is unavailable" [message]="message">
+          <button mat-flat-button type="button" (click)="retry()">
+            <mat-icon>refresh</mat-icon>
+            Try again
+          </button>
+        </app-empty-state>
+      } @else if (total() === 0) {
+        <app-empty-state
+          icon="search_off"
+          title="No matches found"
+          message="Try a different term or check the spelling."
+        />
+      } @else {
+        <p class="result-count" aria-live="polite">
+          {{ total() }} {{ total() === 1 ? 'result' : 'results' }} for “{{ query() }}”
+        </p>
+
+        <div class="result-groups">
+          @for (group of groups(); track group.type) {
+            <section class="result-group" [attr.aria-label]="group.label">
+              <h2>
+                <mat-icon>{{ group.icon }}</mat-icon>
+                {{ group.label }}
+                <span>{{ group.items.length }}</span>
+              </h2>
+
+              @for (item of group.items; track item.id) {
+                <a class="result-item" [routerLink]="item.href">
+                  <div class="result-copy">
+                    <strong>{{ item.title }}</strong>
+                    <span class="project-name">{{ item.projectTitle }}</span>
+                    <p>{{ item.snippet }}</p>
+                  </div>
+                  @if (item.status) {
+                    <app-status-badge [status]="item.status" />
+                  }
+                  <mat-icon class="result-arrow">chevron_right</mat-icon>
+                </a>
+              }
+            </section>
+          }
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</section>

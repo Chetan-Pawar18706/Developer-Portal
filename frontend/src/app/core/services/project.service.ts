@@ -9,6 +9,7 @@ import type {
   Project,
   ProjectActivity,
   ProjectListQuery,
+  SignOffProjectRequest,
   UpdateProjectRequest,
   UpdateProjectStatusRequest,
 } from '../models/project.model';
@@ -89,6 +90,12 @@ export class ProjectService {
         `${this.baseUrl}/${projectId}/status`,
         input,
       )
+      .pipe(map((response) => response.data.project));
+  }
+
+  signOff(projectId: string, input: SignOffProjectRequest): Observable<Project> {
+    return this.http
+      .patch<ApiResponse<{ project: Project }>>(`${this.baseUrl}/${projectId}/sign-off`, input)
       .pipe(map((response) => response.data.project));
   }
 

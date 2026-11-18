@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { USER_ROLES } from '../models/user.model';
+import { USER_ROLES, USER_THEMES } from '../models/user.model';
 
 export const userRoleSchema = z.enum(USER_ROLES);
 
@@ -26,6 +26,7 @@ export const updateProfileSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
     avatar: z.string().trim().max(2048).nullable().optional(),
+    theme: z.enum(USER_THEMES).optional(),
     notificationPrefs: z
       .object({
         emailOnAssignment: z.boolean().optional(),
@@ -39,6 +40,7 @@ export const updateProfileSchema = z
     (value) =>
       value.name !== undefined ||
       value.avatar !== undefined ||
+      value.theme !== undefined ||
       value.notificationPrefs !== undefined,
     { message: 'At least one profile field is required' },
   );

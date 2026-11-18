@@ -233,5 +233,6 @@ const taskSchema = new Schema<TaskAttributes, TaskModel>(
 taskSchema.index({ project: 1, status: 1, order: 1 });
 taskSchema.index({ assignee: 1 });
 taskSchema.index({ requirement: 1 });
+taskSchema.index({ title: 'text', description: 'text', labels: 'text' });
 
 export const Task = model<TaskAttributes, TaskModel>('Task', taskSchema);

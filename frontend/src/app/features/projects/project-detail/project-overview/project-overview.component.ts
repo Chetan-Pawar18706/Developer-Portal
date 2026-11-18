@@ -203,12 +203,16 @@ export class ProjectOverviewComponent {
             return;
           }
 
-          this.updateStatus(project.id, {
-            status: 'completed',
-            note: signOff.note || undefined,
-            rating: signOff.rating ?? undefined,
-            feedback: signOff.feedback || undefined,
-          });
+          this.store
+            .signOff(project.id, {
+              note: signOff.note || undefined,
+              rating: signOff.rating,
+              feedback: signOff.feedback,
+            })
+            .subscribe({
+              next: () =>
+                this.snackBar.open('Delivery signed off', 'Dismiss', { duration: 3000 }),
+            });
         });
 
       return;

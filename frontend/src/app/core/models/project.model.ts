@@ -96,6 +96,7 @@ export interface ProjectActivity {
     | 'project_created'
     | 'project_updated'
     | 'project_archived'
+    | 'delivery_signed_off'
     | 'status_changed'
     | 'member_added'
     | 'member_removed'
@@ -173,6 +174,12 @@ export interface ProjectListQuery extends Omit<ProjectFilters, 'status' | 'prior
 
 export interface SignOffInput {
   note: string;
-  rating: number | null;
+  rating: number;
+  feedback: string;
+}
+
+export interface SignOffProjectRequest {
+  note?: string;
+  rating: number;
   feedback: string;
 }

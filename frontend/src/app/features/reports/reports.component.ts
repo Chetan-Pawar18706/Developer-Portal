@@ -18,6 +18,7 @@ import type { PortfolioReport } from '../../core/models/report.model';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { ReportService } from '../../core/services/report.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
+import { statusTone } from '../../shared/components/status-badge/status-badge.component';
 import {
   BurnDownLineComponent,
   WorkloadBarComponent,
@@ -129,18 +130,6 @@ export class ReportsComponent implements OnInit {
   }
 
   tone(value: string): string {
-    if (['blocked', 'critical', 'off_track', 'rejected', 'overdue'].includes(value)) {
-      return 'danger';
-    }
-
-    if (['in_review', 'at_risk', 'in_progress', 'clarification'].includes(value)) {
-      return 'warning';
-    }
-
-    if (['done', 'approved', 'resolved', 'closed', 'on_track'].includes(value)) {
-      return 'success';
-    }
-
-    return 'neutral';
+    return statusTone(value);
   }
 }

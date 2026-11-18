@@ -198,6 +198,7 @@ requirementSchema.index({ project: 1, priority: 1 });
 requirementSchema.index({ project: 1, type: 1 });
 requirementSchema.index({ project: 1, createdAt: -1 });
 requirementSchema.index({ changeRequestOf: 1 });
+requirementSchema.index({ title: 'text', description: 'text', acceptanceCriteria: 'text' });
 
 export const Requirement = model<RequirementAttributes, RequirementModel>(
   'Requirement',

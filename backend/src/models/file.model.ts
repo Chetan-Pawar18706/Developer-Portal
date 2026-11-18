@@ -153,5 +153,6 @@ const fileSchema = new Schema<FileAttributes, FileModel>(
 
 fileSchema.index({ project: 1, folder: 1, createdAt: -1 });
 fileSchema.index({ project: 1, isInternal: 1, createdAt: -1 });
+fileSchema.index({ originalName: 'text', name: 'text' });
 
 export const File = model<FileAttributes, FileModel>('File', fileSchema);

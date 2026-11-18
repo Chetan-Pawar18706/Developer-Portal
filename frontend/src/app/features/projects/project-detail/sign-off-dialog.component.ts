@@ -1,3 +1,4 @@
+import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import {
   NonNullableFormBuilder,
@@ -15,6 +16,7 @@ import type { SignOffInput } from '../../../core/models/project.model';
   selector: 'app-sign-off-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    A11yModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -34,7 +36,7 @@ import type { SignOffInput } from '../../../core/models/project.model';
       <form [formGroup]="form" (ngSubmit)="submit()" class="dialog-form">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Rating</mat-label>
-          <mat-select formControlName="rating">
+          <mat-select formControlName="rating" cdkFocusInitial aria-label="Delivery rating">
             @for (rating of ratings; track rating.value) {
               <mat-option [value]="rating.value">{{ rating.label }}</mat-option>
             }
@@ -49,6 +51,7 @@ import type { SignOffInput } from '../../../core/models/project.model';
             rows="3"
             maxlength="2000"
             placeholder="What went well? Anything to improve?"
+            aria-label="Delivery feedback"
           ></textarea>
         </mat-form-field>
 
@@ -60,6 +63,7 @@ import type { SignOffInput } from '../../../core/models/project.model';
             rows="2"
             maxlength="1000"
             placeholder="Optional handover note"
+            aria-label="Note for the delivery team"
           ></textarea>
         </mat-form-field>
       </form>

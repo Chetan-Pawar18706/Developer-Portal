@@ -4,6 +4,9 @@ import { Schema, model, type HydratedDocument, type Model } from 'mongoose';
 export const USER_ROLES = ['admin', 'pm', 'developer', 'client'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
+export const USER_THEMES = ['light', 'dark'] as const;
+export type UserTheme = (typeof USER_THEMES)[number];
+
 export interface NotificationPreferences {
   emailOnAssignment: boolean;
   emailOnMention: boolean;
@@ -19,6 +22,7 @@ export interface UserAttributes {
   avatar: string | null;
   isActive: boolean;
   notificationPrefs: NotificationPreferences;
+  theme: UserTheme;
   resetTokenHash: string | null;
   resetTokenExpires: Date | null;
   refreshTokenHash: string | null;
@@ -86,6 +90,12 @@ const userSchema = new Schema<UserAttributes, UserModel, UserMethods>(
         emailOnStatusChange: true,
         emailOnReminder: true,
       }),
+    },
+    theme: {
+      type: String,
+      enum: USER_THEMES,
+      default: 'light',
+      required: true,
     },
     resetTokenHash: {
       type: String,

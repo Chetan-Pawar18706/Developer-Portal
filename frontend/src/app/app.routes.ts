@@ -44,6 +44,16 @@ export const routes: Routes = [
     ],
   },
   {
+    path: '403',
+    loadComponent: () =>
+      import('./features/errors/forbidden.component').then((module) => module.ForbiddenComponent),
+  },
+  {
+    path: '404',
+    loadComponent: () =>
+      import('./features/errors/not-found.component').then((module) => module.NotFoundComponent),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -256,6 +266,18 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'search',
+        data: {
+          title: 'Search',
+          icon: 'search',
+          description: 'Search across the projects and records you can access.',
+        },
+        loadComponent: () =>
+          import('./features/search/search-results.component').then(
+            (module) => module.SearchResultsComponent,
+          ),
+      },
+      {
         path: 'notifications',
         data: {
           title: 'Notifications',
@@ -294,5 +316,9 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },
-  { path: '**', redirectTo: 'dashboard' },
+  {
+    path: '**',
+    loadComponent: () =>
+      import('./features/errors/not-found.component').then((module) => module.NotFoundComponent),
+  },
 ];

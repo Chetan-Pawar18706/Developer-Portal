@@ -50,6 +50,14 @@
   </mat-sidenav>
 
   <mat-sidenav-content>
+    @if (!offline.online()) {
+      <div class="offline-banner" role="status" aria-live="polite">
+        <mat-icon>cloud_off</mat-icon>
+        <span>You are offline. Recent changes may not be saved.</span>
+        <button mat-button type="button" (click)="offline.retry()">Retry connection</button>
+      </div>
+    }
+
     <mat-toolbar class="app-toolbar">
       <button
         mat-icon-button
@@ -67,8 +75,52 @@
 
       <mat-form-field class="global-search" appearance="outline" subscriptSizing="dynamic">
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput placeholder="Search workspace" aria-label="Search workspace" />
+        <input
+          matInput
+          type="search"
+          [formControl]="searchControl"
+          [matAutocomplete]="searchAutocomplete"
+          placeholder="Search workspace"
+          aria-label="Search workspace"
+          (keydown.enter)="openSearch()"
+        />
       </mat-form-field>
+
+      <mat-autocomplete
+        #searchAutocomplete="matAutocomplete"
+        class="search-autocomplete"
+        (optionSelected)="selectSearchResult($event.option.value)"
+      >
+        @if (!hasSearchQuery()) {
+          <mat-option disabled>Type at least two characters</mat-option>
+        } @else if (searchLoading()) {
+          <mat-option disabled>Searching…</mat-option>
+        } @else {
+          @for (group of searchGroups(); track group.type) {
+            <mat-option [disabled]="true" class="search-group-label">{{ group.label }}</mat-option>
+            @for (item of group.items; track item.id) {
+              <mat-option [value]="item">
+                <span class="suggestion-title">{{ item.title }}</span>
+                <span class="suggestion-meta">{{ item.projectTitle }}</span>
+              </mat-option>
+            }
+          }
+          <mat-option [value]="null" class="all-results">
+            View all results for “{{ searchControl.value }}”
+          </mat-option>
+        }
+      </mat-autocomplete>
+
+      <button
+        mat-icon-button
+        type="button"
+        class="search-button"
+        matTooltip="Search"
+        aria-label="Search workspace"
+        (click)="openSearch()"
+      >
+        <mat-icon>search</mat-icon>
+      </button>
 
       <button
         mat-icon-button

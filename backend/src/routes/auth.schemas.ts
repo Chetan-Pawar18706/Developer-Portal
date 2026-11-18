@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { USER_THEMES } from '../models/user.model';
 
 const emailSchema = z.string().trim().toLowerCase().email();
 
@@ -25,6 +26,7 @@ export const resetPasswordSchema = z.object({
 export const updateProfileSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
+    theme: z.enum(USER_THEMES).optional(),
     notificationPrefs: z
       .object({
         emailOnAssignment: z.boolean().optional(),
@@ -36,8 +38,10 @@ export const updateProfileSchema = z
   })
   .refine(
     (value) =>
-      value.name !== undefined || value.notificationPrefs !== undefined,
-    { message: 'Provide a name or notification preference to update' },
+      value.name !== undefined ||
+        value.theme !== undefined ||
+        value.notificationPrefs !== undefined,
+    { message: 'Provide a name, theme or notification preference to update' },
   );
 
 export type RegisterInput = z.infer<typeof registerSchema>;

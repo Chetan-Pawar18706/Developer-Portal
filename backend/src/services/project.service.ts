@@ -11,12 +11,15 @@ import {
   type ProjectPriority,
   type ProjectStatus,
 } from '../models/project.model';
+import { Issue } from '../models/issue.model';
+import { Task } from '../models/task.model';
 import { User, type UserAttributes, type UserRole } from '../models/user.model';
 import { ApiError } from '../utils/ApiError';
 import type {
   AddProjectMemberInput,
   CreateProjectInput,
   ListProjectsQuery,
+  SignOffProjectInput,
   UpdateProjectInput,
   UpdateProjectStatusInput,
 } from '../routes/project.schemas';
@@ -32,6 +35,8 @@ export const PROJECT_STATUS_TRANSITIONS: Record<ProjectStatus, readonly ProjectS
   completed: ['archived'],
   archived: [],
 };
+
+export const OPEN_ISSUE_STATUSES = ['open', 'in_discussion', 'in_progress', 'reopened'] as const;
 
 const PROJECT_POPULATE = [
   { path: 'client', select: 'name email role avatar' },
@@ -307,6 +312,40 @@ export function assertStatusChange(input: StatusChangeInput): void {
 
   if (!isLeadership) {
     throw new ApiError(403, 'You do not have permission to change this project status');
+  }
+}
+
+export interface SignOffEligibilityInput {
+  actor: ProjectActor;
+  projectClientId: string;
+  status: ProjectStatus;
+  incompleteTaskCount: number;
+  openCriticalIssueCount: number;
+}
+
+export function assertCanSignOff(input: SignOffEligibilityInput): void {
+  const { actor, projectClientId, status, incompleteTaskCount, openCriticalIssueCount } = input;
+
+  if (actor.role !== 'client' || actor.id !== projectClientId) {
+    throw new ApiError(403, 'Only the client owner can sign off delivery');
+  }
+
+  if (status !== 'active' && status !== 'on_hold') {
+    throw new ApiError(409, 'Only active projects can be signed off');
+  }
+
+  if (incompleteTaskCount > 0) {
+    throw new ApiError(
+      409,
+      `${incompleteTaskCount} ${incompleteTaskCount === 1 ? 'task is' : 'tasks are'} still incomplete`,
+    );
+  }
+
+  if (openCriticalIssueCount > 0) {
+    throw new ApiError(
+      409,
+      `${openCriticalIssueCount} critical ${openCriticalIssueCount === 1 ? 'issue is' : 'issues are'} still open`,
+    );
   }
 }
 
@@ -623,6 +662,71 @@ export async function changeProjectStatus(
       type: 'project_status_changed',
       message: `Project "${project.title}" changed from ${from} to ${input.status}.`,
       link: `/projects/${project._id.toString()}`,
+    },
+    { includeAllMembers: true },
+  );
+
+  return getProject(project.id);
+}
+
+export async function signOffProject(
+  project: ProjectDocument,
+  actor: ProjectActor,
+  input: SignOffProjectInput,
+): Promise<PublicProject> {
+  const [incompleteTaskCount, openCriticalIssueCount] = await Promise.all([
+    Task.countDocuments({ project: project._id, status: { $ne: 'done' } }),
+    Issue.countDocuments({
+      project: project._id,
+      severity: 'critical',
+      status: { $in: [...OPEN_ISSUE_STATUSES] },
+    }),
+  ]);
+
+  assertCanSignOff({
+    actor,
+    projectClientId: project.client.toString(),
+    status: project.status,
+    incompleteTaskCount,
+    openCriticalIssueCount,
+  });
+
+  const from = project.status;
+  const signedAt = new Date();
+
+  project.status = 'completed';
+  project.deliverySignOff = {
+    signedBy: new Types.ObjectId(actor.id),
+    signedAt,
+    note: input.note ?? '',
+    rating: input.rating,
+    feedback: input.feedback,
+  };
+  await project.save();
+
+  await logActivity({
+    projectId: project._id,
+    actorId: actor.id,
+    action: 'delivery_signed_off',
+    entityType: 'status',
+    entityId: project._id,
+    meta: {
+      from,
+      to: 'completed',
+      signedOff: true,
+      rating: input.rating,
+      ...(input.note ? { note: input.note } : {}),
+    },
+  });
+
+  await notifyProjectTeam(
+    project,
+    actor.id,
+    {
+      projectId: project._id.toString(),
+      type: 'project_status_changed',
+      message: `Project "${project.title}" was signed off and completed.`,
+      link: `/projects/${project._id.toString()}/overview`,
     },
     { includeAllMembers: true },
   );

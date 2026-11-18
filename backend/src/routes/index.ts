@@ -9,6 +9,11 @@ import { notificationRouter } from './notification.routes';
 import { projectRouter } from './project.routes';
 import { reportRouter } from './report.routes';
 import { requirementRouter } from './requirement.routes';
+import { searchQuerySchema } from './search.schemas';
+import { search } from '../controllers/search.controller';
+import { authenticate } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { asyncHandler } from '../utils/asyncHandler';
 import { taskRouter } from './task.routes';
 import { userRouter } from './user.routes';
 
@@ -24,5 +29,11 @@ apiRouter.use('/notifications', notificationRouter);
 apiRouter.use('/projects', projectRouter);
 apiRouter.use('/reports', reportRouter);
 apiRouter.use('/requirements', requirementRouter);
+apiRouter.get(
+  '/search',
+  authenticate,
+  validate({ query: searchQuerySchema }),
+  asyncHandler(search),
+);
 apiRouter.use('/tasks', taskRouter);
 apiRouter.use('/users', userRouter);

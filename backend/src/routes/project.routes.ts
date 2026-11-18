@@ -17,6 +17,7 @@ import {
   listProjectsQuerySchema,
   projectIdParamSchema,
   projectMemberParamSchema,
+  signOffProjectSchema,
   updateProjectSchema,
   updateProjectStatusSchema,
 } from './project.schemas';
@@ -174,6 +175,14 @@ projectRouter.patch(
   validate({ params: projectIdParamSchema, body: updateProjectStatusSchema }),
   projectAccess,
   asyncHandler(projectController.changeStatus),
+);
+
+projectRouter.patch(
+  '/:id/sign-off',
+  allow('client'),
+  validate({ params: projectIdParamSchema, body: signOffProjectSchema }),
+  projectAccess,
+  asyncHandler(projectController.signOff),
 );
 
 projectRouter.get(

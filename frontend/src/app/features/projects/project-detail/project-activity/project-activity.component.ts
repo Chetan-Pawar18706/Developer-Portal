@@ -168,6 +168,8 @@ export class ProjectActivityComponent implements OnInit {
         return 'added a team member';
       case 'member_removed':
         return 'removed a team member';
+      case 'delivery_signed_off':
+        return 'signed off delivery and completed the project';
       case 'status_changed': {
         const from = this.statusLabel(activity.meta['from']);
         const to = this.statusLabel(activity.meta['to']);

@@ -6,6 +6,7 @@ import {
   type NotificationPreferences,
   type UserDocument,
   type UserRole,
+  type UserTheme,
 } from '../models/user.model';
 import { ApiError } from '../utils/ApiError';
 import { hashToken, signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/token';
@@ -26,6 +27,7 @@ export interface PublicUser {
     emailOnStatusChange: boolean;
     emailOnReminder: boolean;
   };
+  theme: UserTheme;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +52,7 @@ export interface LoginInput {
 export interface UpdateProfileInput {
   name?: string;
   notificationPrefs?: Partial<NotificationPreferences>;
+  theme?: UserTheme;
 }
 
 export function toPublicUser(user: UserDocument): PublicUser {
@@ -66,6 +69,7 @@ export function toPublicUser(user: UserDocument): PublicUser {
       emailOnStatusChange: user.notificationPrefs.emailOnStatusChange,
       emailOnReminder: user.notificationPrefs.emailOnReminder,
     },
+    theme: user.theme,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
@@ -241,6 +245,10 @@ export async function updateProfile(
       ...user.notificationPrefs,
       ...input.notificationPrefs,
     };
+  }
+
+  if (input.theme !== undefined) {
+    user.theme = input.theme;
   }
 
   await user.save();

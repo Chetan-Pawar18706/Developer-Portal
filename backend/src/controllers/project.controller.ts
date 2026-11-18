@@ -3,6 +3,7 @@ import type {
   AddProjectMemberInput,
   CreateProjectInput,
   ListProjectsQuery,
+  SignOffProjectInput,
   UpdateProjectInput,
   UpdateProjectStatusInput,
 } from '../routes/project.schemas';
@@ -97,6 +98,16 @@ export async function changeStatus(req: Request, res: Response): Promise<void> {
   );
 
   sendSuccess(res, { project }, 'Project status updated');
+}
+
+export async function signOff(req: Request, res: Response): Promise<void> {
+  const project = await projectService.signOffProject(
+    requireProject(req),
+    requireActor(req),
+    req.body as SignOffProjectInput,
+  );
+
+  sendSuccess(res, { project }, 'Delivery signed off');
 }
 
 export async function getActivity(req: Request, res: Response): Promise<void> {

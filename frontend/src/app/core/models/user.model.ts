@@ -2,6 +2,7 @@ export const ROLES = ['admin', 'pm', 'developer', 'client'] as const;
 
 export type Role = (typeof ROLES)[number];
 export type UserRole = Role;
+export type UserTheme = 'light' | 'dark';
 
 export interface NotificationPreferences {
   emailOnAssignment: boolean;
@@ -18,6 +19,7 @@ export interface User {
   avatar: string | null;
   isActive: boolean;
   notificationPrefs: NotificationPreferences;
+  theme: UserTheme;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +42,7 @@ export interface RegisterRequest {
 
 export interface UpdateProfileRequest {
   name?: string;
+  theme?: UserTheme;
   notificationPrefs?: Partial<NotificationPreferences>;
 }
 

@@ -138,6 +138,10 @@ export async function updateProfile(
     user.avatar = input.avatar;
   }
 
+  if (input.theme !== undefined) {
+    user.theme = input.theme;
+  }
+
   if (input.notificationPrefs) {
     const preferences = input.notificationPrefs;
 

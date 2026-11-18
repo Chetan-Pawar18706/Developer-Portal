@@ -4,6 +4,7 @@ export const ACTIVITY_ACTIONS = [
   'project_created',
   'project_updated',
   'project_archived',
+  'delivery_signed_off',
   'status_changed',
   'member_added',
   'member_removed',

@@ -9,6 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -27,15 +29,18 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, finalize, map, of, startWith, switchMap, tap } from 'rxjs';
 import type {
   Notification,
   NotificationType,
 } from '../../core/models/notification.model';
+import type { SearchGroup, SearchResultItem } from '../../core/models/search.model';
 import { ROLE_LABELS, type Role } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { OfflineService } from '../../core/services/offline.service';
 import { RealtimeService } from '../../core/services/realtime.service';
+import { SearchService } from '../../core/services/search.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { UserAvatarComponent } from '../components/user-avatar/user-avatar.component';
 
@@ -97,9 +102,11 @@ const NAV_ITEMS: readonly NavItem[] = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DatePipe,
+    ReactiveFormsModule,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
+    MatAutocompleteModule,
     MatBadgeModule,
     MatSidenavModule,
     MatToolbarModule,
@@ -122,7 +129,9 @@ export class MainLayoutComponent {
   private readonly realtime = inject(RealtimeService);
   private readonly router = inject(Router);
   private readonly breakpoint = inject(BreakpointObserver);
+  private readonly searchService = inject(SearchService);
   readonly theme = inject(ThemeService);
+  readonly offline = inject(OfflineService);
 
   readonly user = this.auth.currentUser;
   readonly role = this.auth.role;
@@ -142,6 +151,11 @@ export class MainLayoutComponent {
   );
 
   readonly sidenavOpen = signal(true);
+
+  readonly searchControl = new FormControl('', { nonNullable: true });
+  readonly searchGroups = signal<readonly SearchGroup[]>([]);
+  readonly searchLoading = signal(false);
+  readonly hasSearchQuery = computed(() => this.searchControl.value.trim().length >= 2);
 
   readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -188,6 +202,25 @@ export class MainLayoutComponent {
           this.sidenavOpen.set(false);
         }
       });
+
+    this.searchControl.valueChanges
+      .pipe(
+        map((value) => value.trim()),
+        debounceTime(250),
+        distinctUntilChanged(),
+        tap((query) => this.searchLoading.set(query.length >= 2)),
+        switchMap((query) =>
+          query.length < 2
+            ? of([])
+            : this.searchService.search(query, 6).pipe(
+                map((result) => result.groups.filter((group) => group.items.length > 0)),
+                catchError(() => of([])),
+                finalize(() => this.searchLoading.set(false)),
+              ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((groups) => this.searchGroups.set(groups));
 
     this.refreshNotifications();
     this.realtime.notificationNew$
@@ -244,6 +277,25 @@ export class MainLayoutComponent {
 
   openAllNotifications(): void {
     void this.router.navigate(['/notifications']);
+  }
+
+  openSearch(query = ''): void {
+    const term = (query || this.searchControl.value).trim();
+    void this.router.navigate(['/search'], {
+      queryParams: term.length > 0 ? { q: term } : {},
+    });
+    this.searchGroups.set([]);
+  }
+
+  selectSearchResult(item: SearchResultItem | null): void {
+    if (!item) {
+      this.openSearch();
+      return;
+    }
+
+    this.searchControl.setValue('', { emitEvent: false });
+    this.searchGroups.set([]);
+    void this.router.navigateByUrl(item.href);
   }
 
   openProfile(): void {
