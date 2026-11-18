@@ -53,6 +53,7 @@ export async function listProjectRequirements(
   const result = await requirementService.listRequirements(
     requireProject(req).id,
     req.query as unknown as ListRequirementsQuery,
+    requireActor(req),
   );
 
   sendPaginated(res, result.data, result.total, result.page, result.limit);
@@ -74,6 +75,7 @@ export async function createProjectRequirement(
 export async function getRequirement(req: Request, res: Response): Promise<void> {
   const requirement = await requirementService.getRequirement(
     requireRequirement(req).id,
+    requireActor(req),
   );
 
   sendSuccess(res, { requirement }, 'Requirement retrieved');

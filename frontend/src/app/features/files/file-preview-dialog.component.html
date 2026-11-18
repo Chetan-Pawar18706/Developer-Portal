@@ -1,0 +1,29 @@
+<h2 mat-dialog-title>{{ data.name }}</h2>
+
+<mat-dialog-content>
+  @if (loading()) {
+    <div class="loading">
+      <mat-spinner diameter="36" />
+      <span>Loading preview…</span>
+    </div>
+  } @else if (error()) {
+    <div class="error">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ error() }}</p>
+    </div>
+  } @else if (previewUrl(); as url) {
+    @if (isImage) {
+      <img [src]="url" [alt]="data.name" />
+    } @else {
+      <iframe [src]="url" [title]="data.name"></iframe>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="download()">
+    <mat-icon>download</mat-icon>
+    Download
+  </button>
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

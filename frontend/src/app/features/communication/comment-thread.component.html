@@ -92,6 +92,14 @@
         Clients will never see internal notes.
       </p>
     }
+
+    <app-file-uploader
+      [projectId]="resolvedProjectId()"
+      folder="other"
+      [allowInternal]="canUseInternal()"
+      title="Attach files to this comment"
+      (uploaded)="onFileUploaded($event)"
+    />
   </div>
 
   @if (loading() && comments().length === 0) {
@@ -175,6 +183,19 @@
                 <a [href]="attachment.url" target="_blank" rel="noopener noreferrer">
                   {{ attachment.name }}
                 </a>
+              </li>
+            }
+          </ul>
+        }
+
+        @if (item.files.length > 0) {
+          <ul class="attachments">
+            @for (file of item.files; track file.id) {
+              <li>
+                <mat-icon>attach_file</mat-icon>
+                <button type="button" class="file-link" (click)="downloadFile(file)">
+                  {{ file.name }} (v{{ file.version }})
+                </button>
               </li>
             }
           </ul>

@@ -49,6 +49,7 @@ export async function listProjectIssues(req: Request, res: Response): Promise<vo
   const result = await issueService.listIssues(
     requireProject(req),
     req.query as unknown as ListIssuesQuery,
+    requireActor(req),
   );
 
   sendPaginated(res, result.data, result.total, result.page, result.limit, 'Issues retrieved');
@@ -65,7 +66,7 @@ export async function createProjectIssue(req: Request, res: Response): Promise<v
 }
 
 export async function getIssue(req: Request, res: Response): Promise<void> {
-  const issue = await issueService.getIssue(requireIssue(req).id);
+  const issue = await issueService.getIssue(requireIssue(req).id, requireActor(req));
   sendSuccess(res, { issue }, 'Issue retrieved');
 }
 

@@ -1,3 +1,4 @@
+import type { FileLink } from './file.model';
 import type { ProjectStatus, ProjectUserSummary } from './project.model';
 
 export const REQUIREMENT_STATUSES = [
@@ -92,6 +93,7 @@ export interface Requirement {
   status: RequirementStatus;
   versions: RequirementVersion[];
   attachments: RequirementAttachment[];
+  files: FileLink[];
   createdBy: ProjectUserSummary | null;
   reviewNote: string;
   changeRequestOf: RequirementLink | null;
@@ -135,6 +137,7 @@ export interface CreateRequirementRequest {
   priority: RequirementPriority;
   type: RequirementType;
   attachments?: RequirementAttachmentInput[];
+  fileIds?: string[];
 }
 
 export interface UpdateRequirementRequest {
@@ -144,6 +147,7 @@ export interface UpdateRequirementRequest {
   priority?: RequirementPriority;
   type?: RequirementType;
   attachments?: RequirementAttachmentInput[];
+  fileIds?: string[];
 }
 
 export interface UpdateRequirementStatusRequest {

@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from 'express';
+import multer from 'multer';
 import { env } from '../config/env';
 import { ApiError } from '../utils/ApiError';
 
@@ -19,6 +20,18 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _ne
       message: error.message,
       details: error.details,
     });
+    return;
+  }
+
+  if (error instanceof multer.MulterError) {
+    const message =
+      error.code === 'LIMIT_FILE_SIZE'
+        ? 'Files must be 25 MB or smaller'
+        : error.code === 'LIMIT_FILE_COUNT'
+          ? 'You can upload at most 20 files at once'
+          : `Upload failed: ${error.message}`;
+
+    res.status(400).json({ success: false, data: null, message, details: [] });
     return;
   }
 

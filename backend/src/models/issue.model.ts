@@ -34,6 +34,7 @@ export interface IssueAttributes {
   raisedBy: Types.ObjectId;
   assignedTo: Types.ObjectId | null;
   attachments: IssueAttachmentAttributes[];
+  fileIds: Types.ObjectId[];
   linkedTask: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
@@ -129,6 +130,10 @@ const issueSchema = new Schema<IssueAttributes, IssueModel>(
     },
     attachments: {
       type: [issueAttachmentSchema],
+      default: [],
+    },
+    fileIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'File' }],
       default: [],
     },
     linkedTask: {

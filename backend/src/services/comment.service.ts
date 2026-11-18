@@ -17,12 +17,17 @@ import type {
 } from '../routes/comment.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { resolveFileLinks, type PublicFileLink } from './file.service';
 import { notify } from './notification.service';
 
 const COMMENT_POPULATE = [
   { path: 'author', select: 'name email role avatar' },
   { path: 'mentions', select: 'name email role avatar' },
   { path: 'reactions.users', select: 'name email role avatar' },
+  {
+    path: 'fileIds',
+    select: 'originalName mimeType size version isInternal',
+  },
 ];
 
 const MENTION_TOKEN_PATTERN = /@\[[^\]]+\]\(([a-f\d]{24})\)/gi;
@@ -64,6 +69,7 @@ export interface PublicComment {
   isInternal: boolean;
   reactions: PublicCommentReaction[];
   attachments: PublicCommentAttachment[];
+  files: PublicFileLink[];
   editedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -97,6 +103,14 @@ interface PopulatedCommentShape {
   isInternal: boolean;
   reactions: Array<{ emoji: string; users: PopulatedUserShape[] }>;
   attachments: CommentAttachmentAttributes[];
+  fileIds: Array<{
+    _id: Types.ObjectId;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    version: number;
+    isInternal: boolean;
+  }>;
   editedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -130,6 +144,16 @@ function toPublicComment(comment: CommentDocument, actorIsClient: boolean): Publ
       users: reaction.users.map(toUserSummary),
     })),
     attachments: populated.attachments.map((attachment) => ({ ...attachment })),
+    files: populated.fileIds
+      .filter((file) => !actorIsClient || !file.isInternal)
+      .map((file) => ({
+        id: file._id.toString(),
+        name: file.originalName,
+        mimeType: file.mimeType,
+        size: file.size,
+        version: file.version,
+        isInternal: file.isInternal,
+      })),
     editedAt: populated.editedAt,
     createdAt: populated.createdAt,
     updatedAt: populated.updatedAt,
@@ -396,6 +420,12 @@ export async function createComment(
   await loadParent(project, input, actor);
 
   const text = sanitizeCommentText(input.text);
+  const attachedFiles = await resolveFileLinks(input.fileIds, project._id, actor);
+
+  if (attachedFiles.length !== input.fileIds.length) {
+    throw new ApiError(400, 'One or more attached files are unavailable');
+  }
+
   const comment = await Comment.create({
     project: project._id,
     entityType: input.entityType,
@@ -407,6 +437,7 @@ export async function createComment(
     isInternal: input.isInternal,
     reactions: [],
     attachments: attachmentValues(input.attachments),
+    fileIds: attachedFiles.map((file) => new Types.ObjectId(file.id)),
     editedAt: null,
   });
 

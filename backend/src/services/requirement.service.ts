@@ -27,6 +27,7 @@ import type {
 } from '../routes/requirement.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { resolveFileLinks, type PublicFileLink } from './file.service';
 import { notifyProjectTeam } from './notification.service';
 import { buildProjectVisibilityFilter } from './project.service';
 
@@ -74,6 +75,7 @@ const REQUIREMENT_POPULATE = [
   { path: 'createdBy', select: 'name email role avatar' },
   { path: 'versions.editedBy', select: 'name email role avatar' },
   { path: 'changeRequestOf', select: 'title status' },
+  { path: 'fileIds', select: 'originalName mimeType size version isInternal' },
 ];
 
 export const REQUIREMENT_STATUS_TRANSITIONS: Record<
@@ -136,6 +138,7 @@ export interface PublicRequirement {
   status: RequirementStatus;
   versions: PublicRequirementVersion[];
   attachments: PublicRequirementAttachment[];
+  files: PublicFileLink[];
   createdBy: RequirementUserSummary | null;
   reviewNote: string;
   changeRequestOf: PublicRequirementLink | null;
@@ -180,6 +183,14 @@ interface PopulatedRequirementShape {
     editedAt: Date;
   }>;
   attachments: RequirementAttachmentAttributes[];
+  fileIds: Array<{
+    _id: Types.ObjectId;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    version: number;
+    isInternal: boolean;
+  }>;
   createdBy: PopulatedUserShape | null;
   reviewNote: string;
   changeRequestOf:
@@ -207,7 +218,10 @@ function toUserSummary(user: PopulatedUserShape): RequirementUserSummary {
   };
 }
 
-function toPublicRequirement(requirement: RequirementDocument): PublicRequirement {
+function toPublicRequirement(
+  requirement: RequirementDocument,
+  actorIsClient = false,
+): PublicRequirement {
   const populated = requirement as unknown as PopulatedRequirementShape;
   const project = populated.project;
   const projectIsPopulated =
@@ -239,6 +253,16 @@ function toPublicRequirement(requirement: RequirementDocument): PublicRequiremen
       uploadedBy: attachment.uploadedBy ? attachment.uploadedBy.toString() : null,
       uploadedAt: attachment.uploadedAt,
     })),
+    files: populated.fileIds
+      .filter((file) => !actorIsClient || !file.isInternal)
+      .map((file) => ({
+        id: file._id.toString(),
+        name: file.originalName,
+        mimeType: file.mimeType,
+        size: file.size,
+        version: file.version,
+        isInternal: file.isInternal,
+      })),
     createdBy: populated.createdBy ? toUserSummary(populated.createdBy) : null,
     reviewNote: populated.reviewNote,
     changeRequestOf: populated.changeRequestOf
@@ -412,6 +436,7 @@ async function findPopulatedRequirement(
 export async function listRequirements(
   projectId: string,
   query: ListRequirementsQuery,
+  actor?: RequirementActor,
 ): Promise<RequirementListResult> {
   const filter: QueryFilter<RequirementAttributes> = {
     project: new Types.ObjectId(projectId),
@@ -447,7 +472,9 @@ export async function listRequirements(
   ]);
 
   return {
-    data: requirements.map(toPublicRequirement),
+    data: requirements.map((requirement) =>
+      toPublicRequirement(requirement, actor?.role === 'client'),
+    ),
     total,
     page: query.page,
     limit: query.limit,
@@ -508,16 +535,21 @@ export async function listAllRequirements(
   ]);
 
   return {
-    data: requirements.map(toPublicRequirement),
+    data: requirements.map((requirement) =>
+      toPublicRequirement(requirement, actor.role === 'client'),
+    ),
     total,
     page: query.page,
     limit: query.limit,
   };
 }
 
-export async function getRequirement(requirementId: string): Promise<PublicRequirement> {
+export async function getRequirement(
+  requirementId: string,
+  actor?: RequirementActor,
+): Promise<PublicRequirement> {
   const requirement = await findPopulatedRequirement(requirementId);
-  return toPublicRequirement(requirement);
+  return toPublicRequirement(requirement, actor?.role === 'client');
 }
 
 export async function createRequirement(
@@ -529,6 +561,11 @@ export async function createRequirement(
 
   const description = sanitizeDescription(input.description);
   const acceptanceCriteria = normalizeAcceptanceCriteria(input.acceptanceCriteria);
+  const attachedFiles = await resolveFileLinks(input.fileIds, project._id, actor);
+
+  if (attachedFiles.length !== input.fileIds.length) {
+    throw new ApiError(400, 'One or more attached files are unavailable');
+  }
 
   const requirement = await Requirement.create({
     project: project._id,
@@ -546,6 +583,7 @@ export async function createRequirement(
       }),
     ],
     attachments: normalizeAttachments(input.attachments, actor.id),
+    fileIds: attachedFiles.map((file) => new Types.ObjectId(file.id)),
     createdBy: new Types.ObjectId(actor.id),
     reviewNote: '',
     changeRequestOf: null,
@@ -564,7 +602,7 @@ export async function createRequirement(
     },
   });
 
-  return getRequirement(requirement.id);
+  return getRequirement(requirement.id, actor);
 }
 
 export async function updateRequirement(
@@ -602,6 +640,16 @@ export async function updateRequirement(
     requirement.attachments = normalizeAttachments(input.attachments, actor.id);
   }
 
+  if (input.fileIds !== undefined) {
+    const attachedFiles = await resolveFileLinks(input.fileIds, project._id, actor);
+
+    if (attachedFiles.length !== input.fileIds.length) {
+      throw new ApiError(400, 'One or more attached files are unavailable');
+    }
+
+    requirement.fileIds = attachedFiles.map((file) => new Types.ObjectId(file.id));
+  }
+
   requirement.versions = appendRequirementVersion(requirement.versions, {
     title,
     description,
@@ -625,7 +673,7 @@ export async function updateRequirement(
     },
   });
 
-  return getRequirement(requirement.id);
+  return getRequirement(requirement.id, actor);
 }
 
 export async function changeRequirementStatus(
@@ -684,7 +732,7 @@ export async function changeRequirementStatus(
     { roles: ['pm'] },
   );
 
-  return getRequirement(requirement.id);
+  return getRequirement(requirement.id, actor);
 }
 
 export async function createRequirementChangeRequest(

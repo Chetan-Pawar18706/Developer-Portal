@@ -1,0 +1,157 @@
+.files-page {
+  display: grid;
+  gap: 16px;
+}
+
+.files-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+
+  .search-field {
+    width: min(420px, 100%);
+  }
+}
+
+.view-toggle .active {
+  background: rgba(63, 81, 181, 0.12);
+}
+
+.files-layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.folders,
+.version-panel {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.03);
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+  }
+
+  button.active {
+    background: rgba(63, 81, 181, 0.12);
+  }
+}
+
+.files-content {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.file-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  cursor: pointer;
+
+  &.selected {
+    outline: 2px solid #3f51b5;
+  }
+
+  .file-icon mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: #3f51b5;
+  }
+}
+
+.file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.file-meta {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.internal-chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #fff3e0;
+  color: #e65100;
+  font-size: 0.7rem;
+}
+
+.file-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.file-list {
+  display: grid;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.file-row {
+  display: grid;
+  grid-template-columns: 28px minmax(160px, 1fr) 120px 80px 50px auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  &.selected {
+    background: rgba(63, 81, 181, 0.08);
+  }
+}
+
+.version-panel {
+  min-width: 220px;
+
+  .version-file {
+    margin: 0 0 8px;
+    font-weight: 500;
+  }
+}
+
+.current-version,
+.version-row {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 1100px) {
+  .files-layout {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+
+  .version-panel {
+    grid-column: 1 / -1;
+  }
+}

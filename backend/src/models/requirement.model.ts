@@ -43,6 +43,7 @@ export interface RequirementAttributes {
   status: RequirementStatus;
   versions: RequirementVersionAttributes[];
   attachments: RequirementAttachmentAttributes[];
+  fileIds: Types.ObjectId[];
   createdBy: Types.ObjectId;
   reviewNote: string;
   changeRequestOf: Types.ObjectId | null;
@@ -166,6 +167,10 @@ const requirementSchema = new Schema<RequirementAttributes, RequirementModel>(
     },
     attachments: {
       type: [requirementAttachmentSchema],
+      default: [],
+    },
+    fileIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'File' }],
       default: [],
     },
     createdBy: {

@@ -230,6 +230,16 @@
   }
 }
 
+.file-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: #3f51b5;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
 .comment-actions {
   display: flex;
   flex-wrap: wrap;

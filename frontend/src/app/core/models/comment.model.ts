@@ -1,3 +1,5 @@
+import type { FileLink } from './file.model';
+
 export const COMMENT_ENTITY_TYPES = ['project', 'requirement', 'task', 'issue'] as const;
 export type CommentEntityType = (typeof COMMENT_ENTITY_TYPES)[number];
 
@@ -33,6 +35,7 @@ export interface Comment {
   isInternal: boolean;
   reactions: CommentReaction[];
   attachments: CommentAttachment[];
+  files: FileLink[];
   editedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -52,6 +55,7 @@ export interface CreateCommentRequest {
   isInternal?: boolean;
   mentions?: string[];
   attachments?: CommentAttachment[];
+  fileIds?: string[];
 }
 
 export interface UpdateCommentRequest {

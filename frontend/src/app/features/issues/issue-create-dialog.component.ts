@@ -20,6 +20,9 @@ import {
   type IssueSeverity,
   type IssueType,
 } from '../../core/models/issue.model';
+import type { FileLink } from '../../core/models/file.model';
+import { AuthService } from '../../core/services/auth.service';
+import { FileUploaderComponent } from '../files/file-uploader.component';
 import { getErrorMessage } from '../../shared/utils/http-error';
 import { IssueStore } from './issue.store';
 
@@ -39,6 +42,7 @@ export interface IssueCreateDialogData {
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    FileUploaderComponent,
   ],
   template: `
     <h2 mat-dialog-title>Raise an issue</h2>
@@ -112,6 +116,14 @@ export interface IssueCreateDialogData {
           ></textarea>
           <mat-hint>Optional, but especially useful for bugs.</mat-hint>
         </mat-form-field>
+
+        <app-file-uploader
+          [projectId]="data.projectId"
+          folder="other"
+          [allowInternal]="isStaff()"
+          title="Attach screenshots or logs"
+          (uploaded)="onFileUploaded($event)"
+        />
       </mat-dialog-content>
 
       <mat-dialog-actions align="end">
@@ -184,6 +196,7 @@ export class IssueCreateDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<IssueCreateDialogComponent, Issue | undefined>);
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly issueStore = inject(IssueStore);
+  private readonly auth = inject(AuthService);
 
   readonly types = ISSUE_TYPES;
   readonly typeLabels = ISSUE_TYPE_LABELS;
@@ -192,6 +205,8 @@ export class IssueCreateDialogComponent {
 
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
+  readonly attachedFileIds = signal<string[]>([]);
+  readonly isStaff = this.auth.isStaff;
 
   readonly form = this.formBuilder.group({
     title: this.formBuilder.control('', {
@@ -211,6 +226,10 @@ export class IssueCreateDialogComponent {
     }),
   });
 
+  onFileUploaded(file: FileLink): void {
+    this.attachedFileIds.update((ids) => [...ids, file.id]);
+  }
+
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -229,6 +248,7 @@ export class IssueCreateDialogComponent {
         severity: value.severity,
         stepsToReproduce: value.stepsToReproduce.trim(),
         attachments: [],
+        fileIds: this.attachedFileIds(),
       })
       .subscribe({
         next: (issue) => {

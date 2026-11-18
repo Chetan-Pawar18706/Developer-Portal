@@ -50,6 +50,7 @@ export const createIssueSchema = z.object({
   severity: z.enum(ISSUE_SEVERITIES).default('medium'),
   stepsToReproduce: z.string().trim().max(10_000).default(''),
   attachments: z.array(issueAttachmentSchema).max(10).default([]),
+  fileIds: z.array(objectIdSchema).max(20).default([]),
 });
 
 export const updateIssueSchema = z
@@ -60,6 +61,7 @@ export const updateIssueSchema = z
     severity: z.enum(ISSUE_SEVERITIES).optional(),
     stepsToReproduce: z.string().trim().max(10_000).optional(),
     attachments: z.array(issueAttachmentSchema).max(10).optional(),
+    fileIds: z.array(objectIdSchema).max(20).optional(),
     assignedTo: nullableObjectIdSchema,
   })
   .refine((value) => Object.values(value).some((field) => field !== undefined), {

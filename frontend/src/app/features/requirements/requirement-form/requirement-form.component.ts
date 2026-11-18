@@ -20,6 +20,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
+import type { FileLink } from '../../../core/models/file.model';
 import {
   REQUIREMENT_PRIORITIES,
   REQUIREMENT_PRIORITY_LABELS,
@@ -31,7 +32,9 @@ import {
   type RequirementType,
   type UpdateRequirementRequest,
 } from '../../../core/models/requirement.model';
+import { AuthService } from '../../../core/services/auth.service';
 import { RequirementService } from '../../../core/services/requirement.service';
+import { FileUploaderComponent } from '../../files/file-uploader.component';
 import { getErrorMessage } from '../../../shared/utils/http-error';
 import { RequirementStore } from '../requirement.store';
 import { RichTextEditorComponent } from '../rich-text-editor/rich-text-editor.component';
@@ -62,6 +65,7 @@ interface RequirementDraft {
     MatIconModule,
     MatProgressSpinnerModule,
     RichTextEditorComponent,
+    FileUploaderComponent,
   ],
   templateUrl: './requirement-form.component.html',
   styleUrl: './requirement-form.component.scss',
@@ -70,6 +74,7 @@ export class RequirementFormComponent implements OnInit {
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly store = inject(RequirementStore);
   private readonly requirementService = inject(RequirementService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
@@ -84,6 +89,8 @@ export class RequirementFormComponent implements OnInit {
   readonly serverError = signal<string | null>(null);
   readonly draftRestored = signal(false);
   readonly autosaveAt = signal<string | null>(null);
+  readonly attachedFileIds = signal<string[]>([]);
+  readonly isStaff = this.auth.isStaff;
 
   readonly priorities = REQUIREMENT_PRIORITIES;
   readonly priorityLabels = REQUIREMENT_PRIORITY_LABELS;
@@ -144,6 +151,10 @@ export class RequirementFormComponent implements OnInit {
     this.loadRequirement(requirementId);
   }
 
+  onFileUploaded(file: FileLink): void {
+    this.attachedFileIds.update((ids) => [...ids, file.id]);
+  }
+
   submit(): void {
     if (!this.formReady || this.locked()) {
       return;
@@ -176,6 +187,7 @@ export class RequirementFormComponent implements OnInit {
         acceptanceCriteria,
         priority: value.priority,
         type: value.type,
+        fileIds: this.attachedFileIds(),
       };
 
       this.store.create(this.projectId(), payload).subscribe({
@@ -191,6 +203,7 @@ export class RequirementFormComponent implements OnInit {
       acceptanceCriteria,
       priority: value.priority,
       type: value.type,
+      fileIds: this.attachedFileIds(),
     };
 
     this.store.update(this.requirementId(), payload).subscribe({

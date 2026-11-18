@@ -3,6 +3,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   computed,
   effect,
@@ -26,9 +27,12 @@ import type {
   CommentEntityType,
   CreateCommentRequest,
 } from '../../core/models/comment.model';
+import type { FileLink } from '../../core/models/file.model';
 import type { ProjectMember, ProjectUserSummary } from '../../core/models/project.model';
 import { AuthService } from '../../core/services/auth.service';
 import { CommentService } from '../../core/services/comment.service';
+import { FileService } from '../../core/services/file.service';
+import { FileUploaderComponent } from '../files/file-uploader.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { UserAvatarComponent } from '../../shared/components/user-avatar/user-avatar.component';
 import { ConfirmDialogService } from '../../shared/services/confirm-dialog.service';
@@ -105,6 +109,7 @@ function findComment(nodes: readonly Comment[], id: string): Comment | null {
     MatProgressSpinnerModule,
     MatTooltipModule,
     EmptyStateComponent,
+    FileUploaderComponent,
     UserAvatarComponent,
   ],
   templateUrl: './comment-thread.component.html',
@@ -117,6 +122,8 @@ export class CommentThreadComponent {
   readonly members = input<readonly ProjectMember[]>([]);
 
   private readonly commentService = inject(CommentService);
+  private readonly fileService = inject(FileService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly route = inject(ActivatedRoute);
@@ -137,6 +144,7 @@ export class CommentThreadComponent {
   readonly caret = signal(0);
   readonly replyTo = signal<string | null>(null);
   readonly internalNote = signal(false);
+  readonly attachedFileIds = signal<string[]>([]);
   readonly editingId = signal<string | null>(null);
   readonly editDraft = signal('');
   readonly quickReactions = QUICK_REACTIONS;
@@ -358,6 +366,24 @@ export class CommentThreadComponent {
     return users.some((user) => user.id === this.currentUserId());
   }
 
+  onFileUploaded(file: FileLink): void {
+    this.attachedFileIds.update((ids) => [...ids, file.id]);
+  }
+
+  downloadFile(file: FileLink): void {
+    this.fileService
+      .download(file.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.name;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+  }
+
   submit(): void {
     const text = this.draft().trim();
 
@@ -372,6 +398,7 @@ export class CommentThreadComponent {
       text,
       parent,
       isInternal: this.internalNote() && this.canUseInternal(),
+      fileIds: this.attachedFileIds(),
     };
 
     this.posting.set(true);
@@ -395,6 +422,7 @@ export class CommentThreadComponent {
     this.caret.set(0);
     this.replyTo.set(null);
     this.internalNote.set(false);
+    this.attachedFileIds.set([]);
     this.editingId.set(null);
     this.editDraft.set('');
   }

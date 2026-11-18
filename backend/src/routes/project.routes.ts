@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { upload } from '../config/multer';
+import * as fileController from '../controllers/file.controller';
 import * as issueController from '../controllers/issue.controller';
 import * as projectController from '../controllers/project.controller';
 import * as requirementController from '../controllers/requirement.controller';
@@ -17,6 +19,10 @@ import {
   updateProjectSchema,
   updateProjectStatusSchema,
 } from './project.schemas';
+import {
+  createFilesBodySchema,
+  listFilesQuerySchema,
+} from './file.schemas';
 import {
   createIssueSchema,
   listIssuesQuerySchema,
@@ -98,6 +104,22 @@ projectRouter.post(
   validate({ params: taskIdParamSchema, body: createTaskSchema }),
   projectAccess,
   asyncHandler(taskController.createTask),
+);
+
+projectRouter.get(
+  '/:id/files',
+  validate({ params: projectIdParamSchema, query: listFilesQuerySchema }),
+  projectAccess,
+  asyncHandler(fileController.listProjectFiles),
+);
+
+projectRouter.post(
+  '/:id/files',
+  validate({ params: projectIdParamSchema }),
+  projectAccess,
+  upload.array('files', 20),
+  validate({ body: createFilesBodySchema }),
+  asyncHandler(fileController.createProjectFiles),
 );
 
 projectRouter.get(

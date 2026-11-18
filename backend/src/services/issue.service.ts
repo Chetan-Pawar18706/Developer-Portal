@@ -19,6 +19,7 @@ import type {
 } from '../routes/issue.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { resolveFileLinks, type PublicFileLink } from './file.service';
 import { notify } from './notification.service';
 import { buildProjectVisibilityFilter } from './project.service';
 import {
@@ -32,6 +33,7 @@ const ISSUE_POPULATE = [
   { path: 'raisedBy', select: 'name email role avatar' },
   { path: 'assignedTo', select: 'name email role avatar' },
   { path: 'linkedTask', select: 'title status priority' },
+  { path: 'fileIds', select: 'originalName mimeType size version isInternal' },
 ];
 
 export const ISSUE_STATUS_TRANSITIONS: Record<IssueStatus, readonly IssueStatus[]> = {
@@ -90,6 +92,7 @@ export interface PublicIssue {
   raisedBy: IssueUserSummary;
   assignedTo: IssueUserSummary | null;
   attachments: PublicIssueAttachment[];
+  files: PublicFileLink[];
   linkedTask: PublicIssueTaskLink | null;
   createdAt: Date;
   updatedAt: Date;
@@ -134,6 +137,14 @@ interface PopulatedIssueShape {
   raisedBy: PopulatedUserShape;
   assignedTo: PopulatedUserShape | null;
   attachments: IssueAttachmentInput[];
+  fileIds: Array<{
+    _id: Types.ObjectId;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    version: number;
+    isInternal: boolean;
+  }>;
   linkedTask: Types.ObjectId | PopulatedTaskShape | null;
   createdAt: Date;
   updatedAt: Date;
@@ -153,7 +164,7 @@ function toUserSummary(user: PopulatedUserShape): IssueUserSummary {
   };
 }
 
-function toPublicIssue(issue: IssueDocument): PublicIssue {
+function toPublicIssue(issue: IssueDocument, actorIsClient = false): PublicIssue {
   const populated = issue as unknown as PopulatedIssueShape;
   const project = populated.project;
   const linkedTask = populated.linkedTask;
@@ -171,6 +182,16 @@ function toPublicIssue(issue: IssueDocument): PublicIssue {
     raisedBy: toUserSummary(populated.raisedBy),
     assignedTo: populated.assignedTo ? toUserSummary(populated.assignedTo) : null,
     attachments: populated.attachments.map((attachment) => ({ ...attachment })),
+    files: populated.fileIds
+      .filter((file) => !actorIsClient || !file.isInternal)
+      .map((file) => ({
+        id: file._id.toString(),
+        name: file.originalName,
+        mimeType: file.mimeType,
+        size: file.size,
+        version: file.version,
+        isInternal: file.isInternal,
+      })),
     linkedTask:
       linkedTask && !(linkedTask instanceof Types.ObjectId)
         ? {
@@ -326,6 +347,7 @@ function attachmentValues(
 async function runIssueList(
   filter: QueryFilter<IssueAttributes>,
   query: ListIssuesQuery | ListAllIssuesQuery,
+  actorIsClient = false,
 ): Promise<IssueListResult> {
   const direction = query.sortOrder === 'asc' ? 1 : -1;
   const skip = (query.page - 1) * query.limit;
@@ -340,7 +362,7 @@ async function runIssueList(
   ]);
 
   return {
-    data: issues.map(toPublicIssue),
+    data: issues.map((issue) => toPublicIssue(issue, actorIsClient)),
     total,
     page: query.page,
     limit: query.limit,
@@ -350,9 +372,10 @@ async function runIssueList(
 export async function listIssues(
   project: ProjectDocument,
   query: ListIssuesQuery,
+  actor?: IssueActor,
 ): Promise<IssueListResult> {
   const filter = buildListFilter(query, project._id.toString());
-  return runIssueList(filter, query);
+  return runIssueList(filter, query, actor?.role === 'client');
 }
 
 export async function listAllIssues(
@@ -377,11 +400,11 @@ export async function listAllIssues(
 
   const filter = buildListFilter(query);
   filter.project = { $in: visibleProjects.map((project) => project._id) };
-  return runIssueList(filter, query);
+  return runIssueList(filter, query, actor.role === 'client');
 }
 
-export async function getIssue(issueId: string): Promise<PublicIssue> {
-  return toPublicIssue(await findPopulatedIssue(issueId));
+export async function getIssue(issueId: string, actor?: IssueActor): Promise<PublicIssue> {
+  return toPublicIssue(await findPopulatedIssue(issueId), actor?.role === 'client');
 }
 
 export async function createIssue(
@@ -390,6 +413,12 @@ export async function createIssue(
   input: CreateIssueInput,
 ): Promise<PublicIssue> {
   const assignedTo = await findAutoAssignee(project);
+  const attachedFiles = await resolveFileLinks(input.fileIds, project._id, actor);
+
+  if (attachedFiles.length !== input.fileIds.length) {
+    throw new ApiError(400, 'One or more attached files are unavailable');
+  }
+
   const issue = await Issue.create({
     project: project._id,
     title: input.title,
@@ -401,6 +430,7 @@ export async function createIssue(
     raisedBy: new Types.ObjectId(actor.id),
     assignedTo,
     attachments: attachmentValues(input.attachments),
+    fileIds: attachedFiles.map((file) => new Types.ObjectId(file.id)),
     linkedTask: null,
   });
 
@@ -419,7 +449,7 @@ export async function createIssue(
     },
   });
 
-  return getIssue(issue.id);
+  return getIssue(issue.id, actor);
 }
 
 export async function updateIssue(
@@ -470,6 +500,16 @@ export async function updateIssue(
     issue.attachments = attachmentValues(input.attachments);
   }
 
+  if (input.fileIds !== undefined) {
+    const attachedFiles = await resolveFileLinks(input.fileIds, project._id, actor);
+
+    if (attachedFiles.length !== input.fileIds.length) {
+      throw new ApiError(400, 'One or more attached files are unavailable');
+    }
+
+    issue.fileIds = attachedFiles.map((file) => new Types.ObjectId(file.id));
+  }
+
   if (input.assignedTo !== undefined) {
     issue.assignedTo = input.assignedTo ? new Types.ObjectId(input.assignedTo) : null;
   }
@@ -507,7 +547,7 @@ export async function updateIssue(
     },
   });
 
-  return getIssue(issue.id);
+  return getIssue(issue.id, actor);
 }
 
 export async function changeIssueStatus(
@@ -518,7 +558,7 @@ export async function changeIssueStatus(
   assertValidStatusChange(issue, actor, input.status);
 
   if (issue.status === input.status) {
-    return getIssue(issue.id);
+    return getIssue(issue.id, actor);
   }
 
   const previousStatus = issue.status;
@@ -554,7 +594,7 @@ export async function changeIssueStatus(
     link: `/projects/${issue.project.toString()}/issues/${issue._id.toString()}`,
   });
 
-  return getIssue(issue.id);
+  return getIssue(issue.id, actor);
 }
 
 export async function convertIssueToTask(

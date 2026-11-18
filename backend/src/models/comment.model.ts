@@ -26,6 +26,7 @@ export interface CommentAttributes {
   isInternal: boolean;
   reactions: CommentReactionAttributes[];
   attachments: CommentAttachmentAttributes[];
+  fileIds: Types.ObjectId[];
   editedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -127,6 +128,10 @@ const commentSchema = new Schema<CommentAttributes, CommentModel>(
     },
     attachments: {
       type: [attachmentSchema],
+      default: [],
+    },
+    fileIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'File' }],
       default: [],
     },
     editedAt: {

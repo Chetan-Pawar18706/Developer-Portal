@@ -1,4 +1,5 @@
 import type { CommentDocument } from '../models/comment.model';
+import type { FileDocument } from '../models/file.model';
 import type { IssueDocument } from '../models/issue.model';
 import type { ProjectDocument } from '../models/project.model';
 import type { RequirementDocument } from '../models/requirement.model';
@@ -16,6 +17,7 @@ declare global {
       requirement?: RequirementDocument;
       task?: TaskDocument;
       comment?: CommentDocument;
+      fileRecord?: FileDocument;
       issue?: IssueDocument;
     }
   }

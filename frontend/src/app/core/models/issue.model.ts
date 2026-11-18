@@ -1,3 +1,4 @@
+import type { FileLink } from './file.model';
 import type { ProjectUserSummary } from './project.model';
 import type { TaskPriority, TaskStatus } from './task.model';
 
@@ -67,6 +68,7 @@ export interface Issue {
   raisedBy: ProjectUserSummary;
   assignedTo: ProjectUserSummary | null;
   attachments: IssueAttachment[];
+  files: FileLink[];
   linkedTask: IssueTaskLink | null;
   createdAt: string;
   updatedAt: string;
@@ -105,6 +107,7 @@ export interface CreateIssueRequest {
   severity: IssueSeverity;
   stepsToReproduce: string;
   attachments: IssueAttachment[];
+  fileIds?: string[];
 }
 
 export interface UpdateIssueRequest {
@@ -114,6 +117,7 @@ export interface UpdateIssueRequest {
   severity?: IssueSeverity;
   stepsToReproduce?: string;
   attachments?: IssueAttachment[];
+  fileIds?: string[];
   assignedTo?: string | null;
 }
 

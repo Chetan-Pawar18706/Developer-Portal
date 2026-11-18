@@ -173,11 +173,11 @@ export const routes: Routes = [
                 data: {
                   title: 'Files',
                   icon: 'folder_shared',
-                  description: 'Shared project files and deliverables will appear here.',
+                  description: 'Shared project files and deliverables.',
                 },
                 loadComponent: () =>
-                  import('./shared/components/placeholder-page/placeholder-page.component').then(
-                    (module) => module.PlaceholderPageComponent,
+                  import('./features/files/files-tab.component').then(
+                    (module) => module.FilesTabComponent,
                   ),
               },
               {

@@ -27,6 +27,7 @@ export const createCommentSchema = z.object({
   isInternal: z.boolean().default(false),
   mentions: z.array(objectIdSchema).max(50).default([]),
   attachments: z.array(commentAttachmentSchema).max(10).default([]),
+  fileIds: z.array(objectIdSchema).max(20).default([]),
 });
 
 export const updateCommentSchema = z.object({

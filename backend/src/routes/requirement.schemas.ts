@@ -51,6 +51,7 @@ export const createRequirementSchema = z.object({
   priority: z.enum(REQUIREMENT_PRIORITIES).default('should'),
   type: z.enum(REQUIREMENT_TYPES).default('functional'),
   attachments: z.array(attachmentInputSchema).max(20).default([]),
+  fileIds: z.array(objectIdSchema).max(20).default([]),
 });
 
 export const updateRequirementSchema = z
@@ -61,6 +62,7 @@ export const updateRequirementSchema = z
     priority: z.enum(REQUIREMENT_PRIORITIES).optional(),
     type: z.enum(REQUIREMENT_TYPES).optional(),
     attachments: z.array(attachmentInputSchema).max(20).optional(),
+    fileIds: z.array(objectIdSchema).max(20).optional(),
   })
   .refine((value) => Object.values(value).some((field) => field !== undefined), {
     message: 'At least one requirement field is required',

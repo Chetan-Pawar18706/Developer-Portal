@@ -1,0 +1,71 @@
+<section class="uploader">
+  <h3>{{ title() }}</h3>
+
+  <div
+    class="drop-zone"
+    [class.dragging]="dragging()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+  >
+    <mat-icon>cloud_upload</mat-icon>
+    <p>Drag files here or choose files to upload.</p>
+    <span>PDF, PNG, JPG, DOCX, XLSX, ZIP or TXT up to 25 MB each.</span>
+
+    <input
+      #fileInput
+      type="file"
+      multiple
+      hidden
+      [accept]="acceptedTypes"
+      (change)="onFileSelected($event)"
+    />
+    <button mat-stroked-button type="button" (click)="fileInput.click()">
+      <mat-icon>attach_file</mat-icon>
+      Choose files
+    </button>
+  </div>
+
+  @if (allowInternal()) {
+    <mat-slide-toggle [checked]="internal()" (change)="internal.set($event.checked)">
+      Internal file (hidden from clients)
+    </mat-slide-toggle>
+  }
+
+  @for (row of rows(); track row.id) {
+    <div class="upload-row">
+      <div class="upload-row-header">
+        <span class="file-name">{{ row.file.name }}</span>
+        <span class="status" [attr.data-status]="row.status">
+          {{ row.status === 'done' ? 'Uploaded' : row.status === 'error' ? row.error : row.progress + '%' }}
+        </span>
+        <button
+          mat-icon-button
+          type="button"
+          [disabled]="row.status === 'uploading'"
+          matTooltip="Remove"
+          (click)="remove(row.id)"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      @if (row.status === 'uploading') {
+        <mat-progress-bar mode="determinate" [value]="row.progress" />
+      }
+    </div>
+  }
+
+  @if (rows().length > 0) {
+    <div class="uploader-actions">
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="!rows().some((row) => row.status === 'pending' || row.status === 'error')"
+        (click)="uploadAll()"
+      >
+        Upload files
+      </button>
+      <button mat-button type="button" (click)="clearCompleted()">Clear completed</button>
+    </div>
+  }
+</section>

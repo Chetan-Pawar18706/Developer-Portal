@@ -1,0 +1,180 @@
+<section class="files-page">
+  <div class="files-toolbar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search files</mat-label>
+      <input matInput [formControl]="searchControl" placeholder="Search by file name" />
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <div class="view-toggle" role="group" aria-label="View mode">
+      <button
+        mat-icon-button
+        type="button"
+        [class.active]="view() === 'grid'"
+        matTooltip="Grid view"
+        (click)="setView('grid')"
+      >
+        <mat-icon>grid_view</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        type="button"
+        [class.active]="view() === 'list'"
+        matTooltip="List view"
+        (click)="setView('list')"
+      >
+        <mat-icon>view_list</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="files-layout">
+    <aside class="folders">
+      <h3>Folders</h3>
+      <button
+        mat-button
+        type="button"
+        [class.active]="folder() === 'all'"
+        (click)="setFolder('all')"
+      >
+        <mat-icon>folder_open</mat-icon>
+        All files
+      </button>
+      @for (item of folders; track item) {
+        <button
+          mat-button
+          type="button"
+          [class.active]="folder() === item"
+          (click)="setFolder(item)"
+        >
+          <mat-icon>folder</mat-icon>
+          {{ folderLabels[item] }}
+        </button>
+      }
+    </aside>
+
+    <div class="files-content">
+      <app-file-uploader
+        [projectId]="projectId()"
+        [folder]="uploadFolder()"
+        [allowInternal]="isStaff()"
+        title="Upload a project file"
+        (uploaded)="load()"
+      />
+
+      @if (loading()) {
+        <app-loading-skeleton [rows]="4" />
+      } @else if (files().length === 0) {
+        <app-empty-state
+          icon="folder_off"
+          title="No files found"
+          message="Upload a file or try a different folder and search term."
+        />
+      } @else if (view() === 'grid') {
+        <div class="file-grid">
+          @for (file of files(); track file.id) {
+            <mat-card
+              class="file-card"
+              [class.selected]="selected()?.id === file.id"
+              (click)="select(file)"
+            >
+              <div class="file-icon">
+                <mat-icon>
+                  {{ previewable(file.mimeType) ? 'description' : 'insert_drive_file' }}
+                </mat-icon>
+              </div>
+              <div class="file-name" [matTooltip]="file.originalName">
+                {{ file.originalName }}
+              </div>
+              <div class="file-meta">
+                {{ sizeLabel(file.size) }} · v{{ file.version }}
+                @if (file.isInternal) {
+                  <span class="internal-chip">Internal</span>
+                }
+              </div>
+              <div class="file-actions">
+                @if (previewable(file.mimeType)) {
+                  <button mat-icon-button type="button" matTooltip="Preview" (click)="preview(file); $event.stopPropagation()">
+                    <mat-icon>visibility</mat-icon>
+                  </button>
+                }
+                <button mat-icon-button type="button" matTooltip="Download" (click)="download(file); $event.stopPropagation()">
+                  <mat-icon>download</mat-icon>
+                </button>
+                @if (canDelete(file)) {
+                  <button mat-icon-button type="button" matTooltip="Delete" (click)="delete(file); $event.stopPropagation()">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                }
+              </div>
+            </mat-card>
+          }
+        </div>
+      } @else {
+        <div class="file-list">
+          @for (file of files(); track file.id) {
+            <div class="file-row" [class.selected]="selected()?.id === file.id" (click)="select(file)">
+              <mat-icon>
+                {{ previewable(file.mimeType) ? 'description' : 'insert_drive_file' }}
+              </mat-icon>
+              <span class="file-name">{{ file.originalName }}</span>
+              <span class="file-meta">{{ folderLabels[file.folder] }}</span>
+              <span class="file-meta">{{ sizeLabel(file.size) }}</span>
+              <span class="file-meta">v{{ file.version }}</span>
+              @if (file.isInternal) {
+                <span class="internal-chip">Internal</span>
+              }
+              @if (previewable(file.mimeType)) {
+                <button mat-icon-button type="button" matTooltip="Preview" (click)="preview(file); $event.stopPropagation()">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+              }
+              <button mat-icon-button type="button" matTooltip="Download" (click)="download(file); $event.stopPropagation()">
+                <mat-icon>download</mat-icon>
+              </button>
+              @if (canDelete(file)) {
+                <button mat-icon-button type="button" matTooltip="Delete" (click)="delete(file); $event.stopPropagation()">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    @if (selected(); as file) {
+      <aside class="version-panel">
+        <h3>Version history</h3>
+        <p class="version-file">{{ file.originalName }}</p>
+
+        <div class="current-version">
+          <strong>v{{ file.version }}</strong>
+          <span>{{ file.createdAt | date: 'medium' }}</span>
+        </div>
+
+        @for (version of file.versions; track version.uploadedAt) {
+          <div class="version-row">
+            <strong>v{{ $index + 1 }}</strong>
+            <span>{{ sizeLabel(version.size) }}</span>
+            <span>{{ version.uploadedAt | date: 'short' }}</span>
+          </div>
+        }
+
+        <input
+          #versionInput
+          type="file"
+          hidden
+          (change)="addVersion(file, $event)"
+        />
+        <button mat-stroked-button type="button" (click)="versionInput.click()">
+          <mat-icon>history</mat-icon>
+          Upload new version
+        </button>
+        @if (uploadingVersion()) {
+          <mat-progress-spinner mode="indeterminate" diameter="24" />
+        }
+      </aside>
+    }
+  </div>
+</section>

@@ -106,6 +106,16 @@
             <mat-hint>Put each testable criterion on a new line.</mat-hint>
           </mat-form-field>
 
+          @if (!locked()) {
+            <app-file-uploader
+              [projectId]="projectId()"
+              folder="requirements"
+              [allowInternal]="isStaff()"
+              title="Attach supporting files"
+              (uploaded)="onFileUploaded($event)"
+            />
+          }
+
           <div class="form-footer">
             <span class="autosave-status">
               @if (autosaveAt(); as savedAt) {
