@@ -91,6 +91,56 @@
         </mat-card-content>
       </mat-card>
 
+      @if (projectDashboard(); as dashboard) {
+        <mat-card appearance="outlined" class="section-card dashboard-card">
+          <mat-card-header>
+            <mat-card-title>Delivery dashboard</mat-card-title>
+            <mat-card-subtitle>Live project health and workload snapshot</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="dashboard-metrics">
+              <div><strong>{{ dashboard.tasks.completionPercent }}%</strong><span>Complete</span></div>
+              <div><strong>{{ dashboard.tasks.total }}</strong><span>Tasks</span></div>
+              <div><strong>{{ dashboard.tasks.overdue }}</strong><span>Overdue</span></div>
+              <div><strong>{{ openIssuesCount() }}</strong><span>Open issues</span></div>
+              <div><strong>{{ dashboard.pendingApprovals.total }}</strong><span>Approvals</span></div>
+            </div>
+
+            <div class="dashboard-panels">
+              <app-status-donut [labels]="dashboardLabels" [values]="dashboardValues()" />
+
+              <div class="dashboard-lists">
+                <h3>Next deadlines</h3>
+                @if (dashboard.deadlines.length === 0) {
+                  <p class="muted">No deadlines in the next 7 days.</p>
+                } @else {
+                  @for (deadline of dashboard.deadlines; track deadline.id) {
+                    <div class="mini-row">
+                      <mat-icon>schedule</mat-icon>
+                      <span>{{ deadline.title }}</span>
+                      <small>{{ deadline.dueDate | date: 'MMM d' }}</small>
+                    </div>
+                  }
+                }
+
+                <h3>Recent activity</h3>
+                @if (dashboard.activities.length === 0) {
+                  <p class="muted">No activity recorded yet.</p>
+                } @else {
+                  @for (activity of dashboard.activities; track activity.id) {
+                    <div class="mini-row">
+                      <mat-icon>history</mat-icon>
+                      <span>{{ activity.actor.name }} · {{ activity.action.replace('_', ' ') }}</span>
+                      <small>{{ activity.createdAt | date: 'MMM d' }}</small>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
       <mat-card appearance="outlined" class="section-card">
         <mat-card-header>
           <mat-card-title>Team</mat-card-title>

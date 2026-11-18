@@ -1,6 +1,7 @@
 export const ROLES = ['admin', 'pm', 'developer', 'client'] as const;
 
 export type Role = (typeof ROLES)[number];
+export type UserRole = Role;
 
 export interface NotificationPreferences {
   emailOnAssignment: boolean;

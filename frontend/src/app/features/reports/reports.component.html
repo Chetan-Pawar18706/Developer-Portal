@@ -5,9 +5,17 @@
       <h1>Reports</h1>
       <p class="subtitle">Progress, workload and delivery health for the projects you can access.</p>
     </div>
-    @if (report(); as data) {
-      <span class="generated">Generated {{ data.generatedAt | date: 'medium' }}</span>
-    }
+    <div class="header-actions">
+      @if (report(); as data) {
+        <span class="generated">Generated {{ data.generatedAt | date: 'medium' }}</span>
+      }
+      @if (projectId()) {
+        <button mat-flat-button type="button" (click)="downloadPdf()" [disabled]="downloading()">
+          <mat-icon>picture_as_pdf</mat-icon>
+          {{ downloading() ? 'Preparing…' : 'Download PDF' }}
+        </button>
+      }
+    </div>
   </header>
 
   @if (error(); as message) {
@@ -115,6 +123,57 @@
         }
       </mat-card>
     </div>
+
+    @if (pmDashboard(); as pm) {
+      <div class="pm-grid">
+        <mat-card appearance="outlined" class="status-card">
+          <h2>Developer workload</h2>
+          <app-workload-bar
+            [labels]="pm.workload.map(item => item.developerName)"
+            [estimated]="pm.workload.map(item => item.estimatedHours)"
+            [logged]="pm.workload.map(item => item.loggedHours)"
+          />
+        </mat-card>
+
+        <mat-card appearance="outlined" class="status-card">
+          <h2>Burn-down</h2>
+          <app-burn-down-line [points]="pm.burnDown" />
+        </mat-card>
+
+        <mat-card appearance="outlined" class="status-card">
+          <h2>Overdue tasks</h2>
+          @if (pm.overdueTasks.length === 0) {
+            <app-empty-state icon="check_circle" title="Nothing overdue" message="All tasks are on schedule." />
+          } @else {
+            <div class="pm-list">
+              @for (task of pm.overdueTasks; track task.id) {
+                <div class="pm-row">
+                  <mat-icon>schedule</mat-icon>
+                  <span>{{ task.title }}</span>
+                  <small>{{ task.dueDate | date: 'MMM d' }}</small>
+                </div>
+              }
+            </div>
+          }
+        </mat-card>
+
+        <mat-card appearance="outlined" class="status-card">
+          <h2>Issue aging</h2>
+          @if (pm.issueAging.every(item => item.count === 0)) {
+            <app-empty-state icon="verified" title="No open issues" message="Open issues will be bucketed here by age." />
+          } @else {
+            @for (item of pm.issueAging; track item.key) {
+              <div class="status-row">
+                <div class="status-label"><span>{{ item.key }} days</span><strong>{{ item.count }}</strong></div>
+                <div class="status-track">
+                  <span class="status-fill {{ item.key === '15+' ? 'danger' : 'warning' }}" [style.width.%]="barWidth(item.count, pm.issueAging)"></span>
+                </div>
+              </div>
+            }
+          }
+        </mat-card>
+      </div>
+    }
 
     <mat-card appearance="outlined" class="project-card">
       <h2>Project breakdown</h2>

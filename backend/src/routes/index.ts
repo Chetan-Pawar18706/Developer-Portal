@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authRouter } from './auth.routes';
 import { commentRouter } from './comment.routes';
+import { dashboardRouter } from './dashboard.routes';
 import { fileRouter } from './file.routes';
 import { healthRouter } from './health.routes';
 import { issueRouter } from './issue.routes';
@@ -16,6 +17,7 @@ export const apiRouter = Router();
 apiRouter.use('/health', healthRouter);
 apiRouter.use('/auth', authRouter);
 apiRouter.use('/comments', commentRouter);
+apiRouter.use('/dashboard', dashboardRouter);
 apiRouter.use('/files', fileRouter);
 apiRouter.use('/issues', issueRouter);
 apiRouter.use('/notifications', notificationRouter);

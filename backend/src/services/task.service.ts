@@ -34,6 +34,7 @@ import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
 import { notify } from './notification.service';
 import { buildProjectVisibilityFilter } from './project.service';
+import { refreshHealthSafely } from './projectHealth.service';
 
 const TASK_POPULATE = [
   { path: 'project', select: 'title' },
@@ -759,6 +760,8 @@ export async function createTask(
     await notifyTaskAssignment(task, actor.id, input.assigneeId);
   }
 
+  await refreshHealthSafely(project._id);
+
   return getTask(task.id);
 }
 
@@ -824,6 +827,8 @@ export async function createTaskFromIssue(
   if (input.assigneeId) {
     await notifyTaskAssignment(task, actor.id, input.assigneeId);
   }
+
+  await refreshHealthSafely(project._id);
 
   return getTask(task.id);
 }
@@ -928,6 +933,8 @@ export async function updateTask(
     });
   }
 
+  await refreshHealthSafely(task.project);
+
   return getTask(task.id);
 }
 
@@ -966,6 +973,8 @@ export async function moveTask(
       order: input.order,
     },
   });
+
+  await refreshHealthSafely(task.project);
 
   return getTask(task.id);
 }
@@ -1021,6 +1030,8 @@ export async function deleteTask(
     entityId: taskId,
     meta: { taskId: taskId.toString(), title, status },
   });
+
+  await refreshHealthSafely(projectId);
 }
 
 export async function addTimeLog(
@@ -1052,6 +1063,8 @@ export async function addTimeLog(
       note: input.note,
     },
   });
+
+  await refreshHealthSafely(task.project);
 
   return getTask(task.id);
 }

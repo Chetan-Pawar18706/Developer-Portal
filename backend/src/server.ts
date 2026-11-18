@@ -2,11 +2,13 @@ import { app } from './app';
 import { connectDatabase, disconnectDatabase } from './config/db';
 import { env } from './config/env';
 import { startNotificationJobs } from './jobs/notification.job';
+import { startProjectHealthJobs } from './jobs/projectHealth.job';
 
 async function startServer(): Promise<void> {
   try {
     await connectDatabase();
     startNotificationJobs();
+    startProjectHealthJobs();
 
     const server = app.listen(env.PORT);
     await new Promise<void>((resolve, reject) => {

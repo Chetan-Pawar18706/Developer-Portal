@@ -1,5 +1,14 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,6 +16,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import type { ProjectDashboard } from '../../../../core/models/dashboard.model';
 import {
   PROJECT_HEALTH_LABELS,
   PROJECT_PRIORITY_LABELS,
@@ -18,9 +28,11 @@ import {
 } from '../../../../core/models/project.model';
 import { ROLE_LABELS, type Role } from '../../../../core/models/user.model';
 import { AuthService } from '../../../../core/services/auth.service';
+import { DashboardService } from '../../../../core/services/dashboard.service';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { UserAvatarComponent } from '../../../../shared/components/user-avatar/user-avatar.component';
+import { StatusDonutComponent } from '../../../../shared/charts/charts.component';
 import { HasRoleDirective } from '../../../../shared/directives/has-role.directive';
 import { ConfirmDialogService } from '../../../../shared/services/confirm-dialog.service';
 import { ProjectStore } from '../../project.store';
@@ -98,6 +110,7 @@ function buildStatusActions(
     StatusBadgeComponent,
     UserAvatarComponent,
     EmptyStateComponent,
+    StatusDonutComponent,
     HasRoleDirective,
   ],
   templateUrl: './project-overview.component.html',
@@ -109,6 +122,11 @@ export class ProjectOverviewComponent {
   private readonly dialog = inject(MatDialog);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly dashboardService = inject(DashboardService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly projectDashboard = signal<ProjectDashboard | null>(null);
+  readonly dashboardLabels = ['Done', 'Active', 'Overdue'];
 
   readonly statusLabels = PROJECT_STATUS_LABELS;
   readonly priorityLabels = PROJECT_PRIORITY_LABELS;
@@ -129,6 +147,42 @@ export class ProjectOverviewComponent {
   );
 
   readonly ratingStars = [1, 2, 3, 4, 5] as const;
+
+  readonly openIssuesCount = computed(
+    () =>
+      this.projectDashboard()?.issues.openBySeverity.reduce((sum, item) => sum + item.count, 0) ?? 0,
+  );
+
+  readonly dashboardValues = computed(() => {
+    const dashboard = this.projectDashboard();
+    if (!dashboard) {
+      return [0, 0, 0];
+    }
+
+    const done = dashboard.tasks.byStatus.find((item) => item.key === 'done')?.count ?? 0;
+    const total = dashboard.tasks.total;
+    const overdue = dashboard.tasks.overdue;
+    return [done, Math.max(0, total - done - overdue), overdue];
+  });
+
+  constructor() {
+    effect(() => {
+      const projectId = this.store.selected()?.id;
+
+      if (!projectId) {
+        this.projectDashboard.set(null);
+        return;
+      }
+
+      this.dashboardService
+        .getProject(projectId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (dashboard) => this.projectDashboard.set(dashboard),
+          error: () => this.projectDashboard.set(null),
+        });
+    });
+  }
 
   runAction(action: StatusAction): void {
     const project = this.store.selected();

@@ -1,86 +1,182 @@
 <section class="dashboard">
-  <header class="dashboard-header">
-    <div>
-      <p class="eyebrow">Dashboard</p>
+  <header class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">{{ roleLabel() }} workspace</p>
       <h1>Welcome back, {{ firstName() }}</h1>
-      <p class="subtitle">
-        This is your workspace overview. Project activity, tasks and approvals will appear here.
-      </p>
+      <p class="subtitle">{{ roleSubtitle() }}</p>
     </div>
 
-    <div class="role-summary">
-      <app-status-badge status="active" [label]="roleLabel()" />
-      <span class="role-hint">Signed in as {{ user()?.email }}</span>
+    <div class="identity">
+      <app-user-avatar
+        [name]="user()?.name ?? 'User'"
+        [avatar]="user()?.avatar ?? null"
+        size="lg"
+      />
+      <div>
+        <strong>{{ user()?.name }}</strong>
+        <span>{{ user()?.email }}</span>
+      </div>
     </div>
   </header>
 
-  <div class="summary-grid">
-    @for (card of cards; track card.label) {
-      <mat-card appearance="outlined" class="summary-card">
-        <mat-card-content>
-          <div class="summary-icon">
-            <mat-icon>{{ card.icon }}</mat-icon>
-          </div>
-          <div class="summary-value">—</div>
-          <div class="summary-label">{{ card.label }}</div>
-          <div class="summary-hint">{{ card.hint }}</div>
-        </mat-card-content>
-      </mat-card>
-    }
-  </div>
+  @if (error(); as message) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ message }}</span>
+      <button mat-button type="button" (click)="load()">Retry</button>
+    </div>
+  }
 
-  <div class="dashboard-columns">
-    <mat-card appearance="outlined" class="panel">
-      <mat-card-header>
-        <mat-card-title>Recent activity</mat-card-title>
-        <mat-card-subtitle>Updates from across your projects</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="placeholder-row">
-          <mat-icon>timeline</mat-icon>
+  @if (loading()) {
+    <div class="loading" role="status">
+      <mat-spinner diameter="40" />
+      <span>Preparing your dashboard…</span>
+    </div>
+  } @else if (summary(); as data) {
+    <div class="kpi-grid">
+      @for (card of kpis(); track card.label) {
+        <mat-card appearance="outlined" class="kpi-card" [class]="'tone-' + card.tone">
+          <div class="kpi-top">
+            <span class="kpi-icon"><mat-icon>{{ card.icon }}</mat-icon></span>
+            <span class="kpi-value">{{ card.value }}</span>
+          </div>
+          <strong>{{ card.label }}</strong>
+          <small>{{ card.hint }}</small>
+        </mat-card>
+      }
+    </div>
+
+    <div class="dashboard-grid">
+      <mat-card appearance="outlined" class="panel chart-panel">
+        <div class="panel-heading">
           <div>
-            <strong>Nothing to show yet</strong>
-            <p>Activity will appear once projects and tasks are created.</p>
+            <h2>Delivery mix</h2>
+            <p>Task distribution across accessible projects</p>
           </div>
+          <mat-icon aria-hidden="true">donut_large</mat-icon>
         </div>
-      </mat-card-content>
-    </mat-card>
+        <app-status-donut [labels]="donutLabels()" [values]="donutValues()" />
+      </mat-card>
 
-    <mat-card appearance="outlined" class="panel">
-      <mat-card-header>
-        <mat-card-title>Quick actions</mat-card-title>
-        <mat-card-subtitle>Common destinations for your role</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content class="quick-actions">
-        @if (role() === 'client') {
-          <a mat-stroked-button routerLink="/projects">
+      <mat-card appearance="outlined" class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Project health</h2>
+            <p>Current delivery status</p>
+          </div>
+          <a mat-button routerLink="/projects">View all</a>
+        </div>
+
+        @if (projects().length === 0) {
+          <app-empty-state
+            icon="folder_open"
+            title="No projects yet"
+            message="Projects you can access will appear here."
+          />
+        } @else {
+          <div class="health-list">
+            @for (project of projects(); track project.id) {
+              <a class="health-row" [routerLink]="['/projects', project.id]">
+                <span class="health-bar" [class]="'health-' + project.health"></span>
+                <div class="health-copy">
+                  <strong>{{ project.title }}</strong>
+                  <span>{{ project.doneTasks }}/{{ project.totalTasks }} tasks · {{ project.openIssues }} issues</span>
+                </div>
+                <span class="health-chip" [class]="'health-' + project.health">
+                  {{ healthLabel(project.health) }}
+                </span>
+              </a>
+            }
+          </div>
+        }
+      </mat-card>
+    </div>
+
+    <div class="dashboard-grid">
+      <mat-card appearance="outlined" class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Focus for today</h2>
+            <p>Where attention is needed most</p>
+          </div>
+          <mat-icon aria-hidden="true">priority_high</mat-icon>
+        </div>
+
+        @if (projects().length === 0) {
+          <app-empty-state
+            icon="task_alt"
+            title="Nothing needs attention"
+            message="Create tasks and projects to build your focus list."
+          />
+        } @else {
+          <div class="focus-list">
+            @for (project of projects(); track project.id) {
+              @if (project.overdueTasks > 0 || project.openIssues > 0) {
+                <a class="focus-row" [routerLink]="['/projects', project.id]">
+                  <mat-icon [color]="project.overdueTasks > 0 ? 'warn' : 'primary'">
+                    {{ project.overdueTasks > 0 ? 'schedule' : 'bug_report' }}
+                  </mat-icon>
+                  <div>
+                    <strong>{{ project.title }}</strong>
+                    <span>
+                      @if (project.overdueTasks > 0) {
+                        {{ project.overdueTasks }} overdue task(s)
+                      }
+                      @if (project.overdueTasks > 0 && project.openIssues > 0) {
+                        ·
+                      }
+                      @if (project.openIssues > 0) {
+                        {{ project.openIssues }} open issue(s)
+                      }
+                    </span>
+                  </div>
+                </a>
+              }
+            }
+          </div>
+        }
+      </mat-card>
+
+      <mat-card appearance="outlined" class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>Quick actions</h2>
+            <p>Common destinations for your role</p>
+          </div>
+          <mat-icon aria-hidden="true">bolt</mat-icon>
+        </div>
+
+        <div class="quick-actions">
+          <a mat-flat-button routerLink="/projects">
             <mat-icon>folder_open</mat-icon>
-            View projects
+            Projects
           </a>
-        }
-        @if (role() === 'developer') {
-          <a mat-stroked-button routerLink="/tasks">
-            <mat-icon>task_alt</mat-icon>
-            My tasks
+          @if (role() === 'developer') {
+            <a mat-stroked-button routerLink="/tasks">
+              <mat-icon>task_alt</mat-icon>
+              My tasks
+            </a>
+          }
+          <a mat-stroked-button routerLink="/issues">
+            <mat-icon>bug_report</mat-icon>
+            Issues
           </a>
-        }
-        @if (role() === 'pm' || role() === 'admin') {
-          <a mat-stroked-button routerLink="/projects">
-            <mat-icon>folder_open</mat-icon>
-            Manage projects
+          <a mat-stroked-button routerLink="/files">
+            <mat-icon>attach_file</mat-icon>
+            Files
           </a>
-        }
-        <a mat-stroked-button routerLink="/issues">
-          <mat-icon>bug_report</mat-icon>
-          Review issues
-        </a>
-        <ng-container *appHasRole="'admin'">
-          <a mat-stroked-button routerLink="/admin/users">
-            <mat-icon>group</mat-icon>
-            Manage users
+          <a mat-stroked-button routerLink="/communication">
+            <mat-icon>forum</mat-icon>
+            Messages
           </a>
-        </ng-container>
-      </mat-card-content>
-    </mat-card>
-  </div>
+          <ng-container *appHasRole="'admin'">
+            <a mat-stroked-button routerLink="/admin/users">
+              <mat-icon>group</mat-icon>
+              Users
+            </a>
+          </ng-container>
+        </div>
+      </mat-card>
+    </div>
+  }
 </section>

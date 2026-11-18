@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { upload } from '../config/multer';
+import * as dashboardController from '../controllers/dashboard.controller';
 import * as fileController from '../controllers/file.controller';
 import * as issueController from '../controllers/issue.controller';
 import * as projectController from '../controllers/project.controller';
@@ -104,6 +105,28 @@ projectRouter.post(
   validate({ params: taskIdParamSchema, body: createTaskSchema }),
   projectAccess,
   asyncHandler(taskController.createTask),
+);
+
+projectRouter.get(
+  '/:id/dashboard',
+  validate({ params: projectIdParamSchema }),
+  projectAccess,
+  asyncHandler(dashboardController.getProjectDashboard),
+);
+
+projectRouter.get(
+  '/:id/dashboard/pm',
+  allow('admin', 'pm'),
+  validate({ params: projectIdParamSchema }),
+  projectAccess,
+  asyncHandler(dashboardController.getProjectPmDashboard),
+);
+
+projectRouter.get(
+  '/:id/report.pdf',
+  validate({ params: projectIdParamSchema }),
+  projectAccess,
+  asyncHandler(dashboardController.downloadProjectReport),
 );
 
 projectRouter.get(
