@@ -29,6 +29,7 @@ import {
 } from '../../../core/models/task.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { TaskService } from '../../../core/services/task.service';
+import { CommentThreadComponent } from '../../communication/comment-thread.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -130,6 +131,7 @@ function buildActions(
     EmptyStateComponent,
     LoadingSkeletonComponent,
     UserAvatarComponent,
+    CommentThreadComponent,
   ],
   templateUrl: './requirement-detail.component.html',
   styleUrl: './requirement-detail.component.scss',

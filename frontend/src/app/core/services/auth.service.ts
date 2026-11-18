@@ -22,7 +22,7 @@ export class AuthService {
   readonly isAdmin = computed(() => this.role() === 'admin');
   readonly isStaff = computed(() => {
     const role = this.role();
-    return role === 'admin' || role === 'pm';
+    return role === 'admin' || role === 'pm' || role === 'developer';
   });
 
   login(credentials: LoginRequest): Observable<AuthResponse> {

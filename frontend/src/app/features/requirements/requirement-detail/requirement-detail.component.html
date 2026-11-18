@@ -298,6 +298,23 @@
                 }
               </mat-card-content>
             </mat-card>
+
+            <mat-card appearance="outlined" class="section-card">
+              <mat-card-header>
+                <mat-card-title>Discussion</mat-card-title>
+                <mat-card-subtitle>
+                  Coordination and decisions tied to this requirement
+                </mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <app-comment-thread
+                  entityType="requirement"
+                  [entityId]="requirement.id"
+                  [projectId]="projectId()"
+                  [members]="projectStore.selected()?.members ?? []"
+                />
+              </mat-card-content>
+            </mat-card>
           </div>
 
           <aside class="side-column">

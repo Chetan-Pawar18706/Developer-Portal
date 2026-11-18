@@ -354,6 +354,17 @@
         }}
       </p>
     </section>
+
+    <mat-divider />
+
+    <section class="detail-section">
+      <app-comment-thread
+        entityType="task"
+        [entityId]="currentTask.id"
+        [projectId]="data.projectId"
+        [members]="data.project.members"
+      />
+    </section>
   }
 </mat-dialog-content>
 

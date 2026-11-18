@@ -40,6 +40,7 @@ import {
 import { AuthService } from '../../core/services/auth.service';
 import { RequirementService } from '../../core/services/requirement.service';
 import { getErrorMessage } from '../../shared/utils/http-error';
+import { CommentThreadComponent } from '../communication/comment-thread.component';
 import { ConfirmDialogService } from '../../shared/services/confirm-dialog.service';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { UserAvatarComponent } from '../../shared/components/user-avatar/user-avatar.component';
@@ -76,6 +77,7 @@ export interface TaskDialogData {
     MatTooltipModule,
     StatusBadgeComponent,
     UserAvatarComponent,
+    CommentThreadComponent,
   ],
   templateUrl: './task-dialog.component.html',
   styleUrl: './task-dialog.component.scss',

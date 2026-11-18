@@ -102,8 +102,12 @@ export interface ProjectActivity {
     | 'requirement_created'
     | 'requirement_updated'
     | 'requirement_status_changed'
-    | 'requirement_change_requested';
-  entityType: 'project' | 'member' | 'status' | 'requirement';
+    | 'requirement_change_requested'
+    | 'comment_created'
+    | 'comment_updated'
+    | 'comment_deleted'
+    | 'comment_reacted';
+  entityType: 'project' | 'member' | 'status' | 'requirement' | 'task' | 'comment';
   entityId: string | null;
   meta: Record<string, unknown>;
   actor: ProjectUserSummary | null;

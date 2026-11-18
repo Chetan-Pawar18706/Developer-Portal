@@ -1,0 +1,244 @@
+<section class="comment-thread" aria-label="Comment thread">
+  <header class="thread-heading">
+    <div>
+      <h3>Discussion</h3>
+      <p>Replies, mentions and internal notes for this item.</p>
+    </div>
+    @if (loading() && comments().length > 0) {
+      <mat-progress-spinner diameter="20" mode="indeterminate" />
+    }
+  </header>
+
+  @if (error(); as message) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ message }}</span>
+    </div>
+  }
+
+  <div class="composer">
+    @if (replyTarget(); as target) {
+      <div class="reply-context">
+        <mat-icon>reply</mat-icon>
+        <span>Replying to {{ target.author.name }}</span>
+        <button mat-button type="button" (click)="cancelReply()">Cancel</button>
+      </div>
+    }
+
+    <mat-form-field appearance="outline" class="composer-field">
+      <mat-label>{{ replyTarget() ? 'Write a reply' : 'Write a comment' }}</mat-label>
+      <textarea
+        matInput
+        #composerInput
+        rows="3"
+        maxlength="10000"
+        [value]="draft()"
+        [matAutocomplete]="memberAutocomplete"
+        [placeholder]="
+          replyTarget()
+            ? 'Add your reply. Type @ to mention a member.'
+            : 'Share an update. Type @ to mention a member.'
+        "
+        (input)="onDraftInput($event)"
+        (click)="onCaretMove($event)"
+        (keyup)="onCaretMove($event)"
+      ></textarea>
+      <mat-autocomplete #memberAutocomplete="matAutocomplete">
+        @for (member of mentionCandidates(); track member.user.id) {
+          <mat-option [value]="member.user.id" (onSelectionChange)="insertMention(member.user)">
+            <span class="mention-option">
+              <app-user-avatar
+                [name]="member.user.name"
+                [avatar]="member.user.avatar"
+                size="sm"
+              />
+              <span class="mention-name">{{ member.user.name }}</span>
+              <small>{{ member.user.email }}</small>
+            </span>
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <div class="composer-footer">
+      @if (canUseInternal()) {
+        <button
+          mat-stroked-button
+          type="button"
+          class="internal-toggle"
+          [class.active]="internalNote()"
+          [matTooltip]="'Visible to the delivery team only'"
+          (click)="toggleInternal()"
+        >
+          <mat-icon>lock</mat-icon>
+          Internal note
+        </button>
+      }
+      <span class="spacer"></span>
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="!canPost()"
+        (click)="submit()"
+      >
+        <mat-icon>send</mat-icon>
+        {{ replyTarget() ? 'Reply' : 'Comment' }}
+      </button>
+    </div>
+
+    @if (internalNote() && canUseInternal()) {
+      <p class="internal-hint">
+        <mat-icon>info</mat-icon>
+        Clients will never see internal notes.
+      </p>
+    }
+  </div>
+
+  @if (loading() && comments().length === 0) {
+    <div class="loading-state">
+      <mat-progress-spinner diameter="28" mode="indeterminate" />
+      <span>Loading discussion…</span>
+    </div>
+  } @else if (comments().length === 0) {
+    <app-empty-state
+      icon="forum"
+      title="No comments yet"
+      message="Start the conversation, mention teammates, or add a private internal note."
+    />
+  } @else {
+    <div class="thread-list">
+      @for (comment of comments(); track comment.id) {
+        <ng-container
+          [ngTemplateOutlet]="commentTemplate"
+          [ngTemplateOutletContext]="{ $implicit: comment }"
+        />
+      }
+    </div>
+  }
+
+  <ng-template #commentTemplate let-item>
+    <article
+      class="comment"
+      [class.internal]="item.isInternal"
+      [class.reply]="item.parentId !== null"
+    >
+      <app-user-avatar
+        [name]="item.author.name"
+        [avatar]="item.author.avatar"
+        size="sm"
+      />
+
+      <div class="comment-main">
+        <header class="comment-header">
+          <strong>{{ item.author.name }}</strong>
+          @if (item.isInternal) {
+            <span class="internal-badge">
+              <mat-icon>lock</mat-icon>
+              Internal note
+            </span>
+          }
+          <time>{{ item.createdAt | date: 'MMM d, y, h:mm a' }}</time>
+          @if (item.editedAt) {
+            <span class="edited">(edited)</span>
+          }
+        </header>
+
+        @if (editingId() === item.id) {
+          <div class="edit-box">
+            <textarea
+              rows="3"
+              maxlength="10000"
+              [value]="editDraft()"
+              (input)="editDraft.set($any($event.target).value)"
+            ></textarea>
+            <div class="edit-actions">
+              <button mat-button type="button" (click)="cancelEdit()">Cancel</button>
+              <button
+                mat-flat-button
+                type="button"
+                [disabled]="!editDraft().trim() || busyId() === item.id"
+                (click)="saveEdit(item.id)"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="comment-text" [innerHTML]="renderCommentText(item.text)"></div>
+        }
+
+        @if (item.attachments.length > 0) {
+          <ul class="attachments">
+            @for (attachment of item.attachments; track attachment.url) {
+              <li>
+                <mat-icon>attach_file</mat-icon>
+                <a [href]="attachment.url" target="_blank" rel="noopener noreferrer">
+                  {{ attachment.name }}
+                </a>
+              </li>
+            }
+          </ul>
+        }
+
+        <div class="comment-actions">
+          <button mat-button type="button" (click)="startReply(item)">
+            <mat-icon>reply</mat-icon>
+            Reply
+          </button>
+          @if (item.author.id === currentUserId()) {
+            <button mat-button type="button" (click)="startEdit(item)">
+              <mat-icon>edit</mat-icon>
+              Edit
+            </button>
+          }
+          @if (item.author.id === currentUserId() || canDeleteAny()) {
+            <button mat-button type="button" color="warn" (click)="removeComment(item)">
+              <mat-icon>delete_outline</mat-icon>
+              Delete
+            </button>
+          }
+        </div>
+
+        <div class="reaction-row">
+          @for (reaction of item.reactions; track reaction.emoji) {
+            <button
+              mat-stroked-button
+              type="button"
+              class="reaction"
+              [class.mine]="isReacted(reaction.users)"
+              [disabled]="busyId() === item.id"
+              [matTooltip]="reaction.users.length + ' reaction(s)'"
+              (click)="react(item.id, reaction.emoji)"
+            >
+              <span class="emoji">{{ reaction.emoji }}</span>
+              <span class="count">{{ reaction.users.length }}</span>
+            </button>
+          }
+          @for (emoji of quickReactions; track emoji) {
+            <button
+              mat-icon-button
+              type="button"
+              class="quick-reaction"
+              [disabled]="busyId() === item.id"
+              [matTooltip]="'React ' + emoji"
+              (click)="react(item.id, emoji)"
+            >
+              {{ emoji }}
+            </button>
+          }
+        </div>
+
+        @if (item.replies.length > 0) {
+          <div class="replies">
+            @for (reply of item.replies; track reply.id) {
+              <ng-container
+                [ngTemplateOutlet]="commentTemplate"
+                [ngTemplateOutletContext]="{ $implicit: reply }"
+              />
+            }
+          </div>
+        }
+      </div>
+    </article>
+  </ng-template>
+</section>

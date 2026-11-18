@@ -177,11 +177,11 @@ export const routes: Routes = [
                 data: {
                   title: 'Discussion',
                   icon: 'forum',
-                  description: 'Project conversations and comment threads are coming soon.',
+                  description: 'Project conversations and comment threads.',
                 },
                 loadComponent: () =>
-                  import('./shared/components/placeholder-page/placeholder-page.component').then(
-                    (module) => module.PlaceholderPageComponent,
+                  import('./features/communication/project-discussion.component').then(
+                    (module) => module.ProjectDiscussionComponent,
                   ),
               },
               {

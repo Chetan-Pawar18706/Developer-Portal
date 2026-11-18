@@ -18,6 +18,10 @@ export const ACTIVITY_ACTIONS = [
   'task_time_logged',
   'task_subtasks_updated',
   'task_client_reviewed',
+  'comment_created',
+  'comment_updated',
+  'comment_deleted',
+  'comment_reacted',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
@@ -28,6 +32,7 @@ export const ACTIVITY_ENTITY_TYPES = [
   'status',
   'requirement',
   'task',
+  'comment',
 ] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];
 
