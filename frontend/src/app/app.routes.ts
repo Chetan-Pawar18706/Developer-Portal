@@ -251,8 +251,8 @@ export const routes: Routes = [
           description: 'Shared project documents, attachments and deliverables.',
         },
         loadComponent: () =>
-          import('./shared/components/placeholder-page/placeholder-page.component').then(
-            (module) => module.PlaceholderPageComponent,
+          import('./features/files/global-files.component').then(
+            (module) => module.GlobalFilesComponent,
           ),
       },
       {

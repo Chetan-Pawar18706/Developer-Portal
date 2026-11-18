@@ -45,6 +45,15 @@ function sendFile(res: Response, file: FileDocument, buffer: Buffer, inline: boo
   res.send(buffer);
 }
 
+export async function listAllFiles(req: Request, res: Response): Promise<void> {
+  const result = await fileService.listAllFiles(
+    requireActor(req),
+    req.query as unknown as ListFilesQuery,
+  );
+
+  sendPaginated(res, result.data, result.total, result.page, result.limit, 'Files retrieved');
+}
+
 export async function listProjectFiles(req: Request, res: Response): Promise<void> {
   const result = await fileService.listFiles(
     requireProject(req)._id,

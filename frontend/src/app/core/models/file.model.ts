@@ -59,6 +59,7 @@ export interface FileVersion {
 export interface ProjectFile {
   id: string;
   projectId: string;
+  projectTitle: string | null;
   name: string;
   originalName: string;
   mimeType: string;
@@ -82,6 +83,7 @@ export interface FileLink {
 }
 
 export interface FileListQuery {
+  projectId?: string;
   folder?: FileFolder;
   search?: string;
   page?: number;

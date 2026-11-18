@@ -5,11 +5,17 @@ import { authenticate } from '../middleware/auth';
 import { fileAccess } from '../middleware/fileAccess';
 import { validate } from '../middleware/validate';
 import { asyncHandler } from '../utils/asyncHandler';
-import { fileIdParamSchema } from './file.schemas';
+import { fileIdParamSchema, listFilesQuerySchema } from './file.schemas';
 
 export const fileRouter = Router();
 
 fileRouter.use(authenticate);
+
+fileRouter.get(
+  '/',
+  validate({ query: listFilesQuerySchema }),
+  asyncHandler(fileController.listAllFiles),
+);
 
 fileRouter.get(
   '/:id/download',

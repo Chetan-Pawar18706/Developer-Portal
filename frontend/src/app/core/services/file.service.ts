@@ -44,6 +44,36 @@ export class FileService {
       .pipe(map((response) => response.data));
   }
 
+  listAll(query: FileListQuery = {}): Observable<PaginatedData<ProjectFile>> {
+    let params = new HttpParams()
+      .set('page', query.page ?? 1)
+      .set('limit', query.limit ?? 50);
+
+    if (query.projectId) {
+      params = params.set('projectId', query.projectId);
+    }
+
+    if (query.folder) {
+      params = params.set('folder', query.folder);
+    }
+
+    if (query.search) {
+      params = params.set('search', query.search);
+    }
+
+    if (query.sortBy) {
+      params = params.set('sortBy', query.sortBy);
+    }
+
+    if (query.sortOrder) {
+      params = params.set('sortOrder', query.sortOrder);
+    }
+
+    return this.http
+      .get<ApiResponse<PaginatedData<ProjectFile>>>(this.baseUrl, { params })
+      .pipe(map((response) => response.data));
+  }
+
   upload(
     projectId: string,
     file: File,

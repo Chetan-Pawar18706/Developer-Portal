@@ -1,0 +1,140 @@
+.global-files {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.page-header {
+  h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+  }
+
+  .subtitle {
+    max-width: 48rem;
+    margin: 0.35rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+    line-height: 1.5;
+  }
+}
+
+.eyebrow {
+  margin: 0 0 0.15rem;
+  color: var(--mat-sys-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+
+  .search-field {
+    flex: 1 1 18rem;
+    max-width: 28rem;
+  }
+
+  .folder-field {
+    flex: 0 1 14rem;
+  }
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--status-blocked-border);
+  border-radius: 0.7rem;
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked);
+}
+
+.file-table {
+  overflow: hidden;
+  border-radius: 0.9rem;
+}
+
+.file-row {
+  display: grid;
+  grid-template-columns: auto minmax(12rem, 1fr) repeat(3, auto) auto auto auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: var(--mat-sys-surface-container-low);
+  }
+}
+
+.file-icon {
+  color: var(--mat-sys-primary);
+}
+
+.file-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.file-name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-link {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.78rem;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--mat-sys-primary);
+    text-decoration: underline;
+  }
+}
+
+.file-meta {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.78rem;
+  white-space: nowrap;
+
+  &.updated {
+    min-width: 6.5rem;
+    text-align: right;
+  }
+}
+
+.internal-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--status-review-border);
+  border-radius: 999px;
+  background: var(--status-review-bg);
+  color: var(--status-review);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .file-row {
+    grid-template-columns: auto minmax(10rem, 1fr) auto auto;
+
+    .file-meta:not(.updated),
+    .internal-chip {
+      display: none;
+    }
+  }
+}

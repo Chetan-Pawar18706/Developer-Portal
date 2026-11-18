@@ -12,6 +12,7 @@ export const fileIdParamSchema = z.object({
 });
 
 export const listFilesQuerySchema = z.object({
+  projectId: objectIdSchema.optional(),
   folder: z.enum(FILE_FOLDERS).optional(),
   search: z.string().trim().max(200).optional(),
   page: z.coerce.number().int().min(1).default(1),

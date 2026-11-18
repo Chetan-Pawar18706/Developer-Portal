@@ -11,7 +11,10 @@ import { Project } from '../models/project.model';
 import type { UserRole } from '../models/user.model';
 import type { ListFilesQuery } from '../routes/file.schemas';
 import { ApiError } from '../utils/ApiError';
-import { canAccessProject } from './project.service';
+import {
+  buildProjectVisibilityFilter,
+  canAccessProject,
+} from './project.service';
 import { storageService } from './storage.service';
 
 export interface FileActor {
@@ -37,6 +40,7 @@ export interface PublicFileVersion {
 export interface PublicFile {
   id: string;
   projectId: string;
+  projectTitle: string | null;
   name: string;
   originalName: string;
   mimeType: string;
@@ -74,9 +78,14 @@ interface PopulatedUserShape {
   avatar: string | null;
 }
 
+interface PopulatedProjectShape {
+  _id: Types.ObjectId;
+  title: string;
+}
+
 interface PopulatedFileShape {
   id: string;
-  project: Types.ObjectId;
+  project: Types.ObjectId | PopulatedProjectShape;
   name: string;
   originalName: string;
   mimeType: string;
@@ -101,6 +110,11 @@ const FILE_POPULATE = [
   { path: 'versions.uploadedBy', select: 'name email role avatar' },
 ];
 
+const FILE_LIST_POPULATE = [
+  ...FILE_POPULATE,
+  { path: 'project', select: 'title' },
+];
+
 const STAFF_ROLES: readonly UserRole[] = ['admin', 'pm', 'developer'];
 
 function isStaff(actor: FileActor): boolean {
@@ -121,12 +135,20 @@ function toUserSummary(user: PopulatedUserShape | null): PublicUserSummary | nul
   };
 }
 
+function isPopulatedProject(
+  project: Types.ObjectId | PopulatedProjectShape,
+): project is PopulatedProjectShape {
+  return !(project instanceof Types.ObjectId);
+}
+
 function toPublicFile(file: FileDocument): PublicFile {
   const populated = file as unknown as PopulatedFileShape;
+  const project = populated.project;
 
   return {
     id: populated.id,
-    projectId: populated.project.toString(),
+    projectId: isPopulatedProject(project) ? project._id.toString() : project.toString(),
+    projectTitle: isPopulatedProject(project) ? project.title : null,
     name: populated.name,
     originalName: populated.originalName,
     mimeType: populated.mimeType,
@@ -235,6 +257,58 @@ export async function listFiles(
   const [files, total] = await Promise.all([
     File.find(filter)
       .populate(FILE_POPULATE)
+      .sort(sort)
+      .skip(skip)
+      .limit(query.limit),
+    File.countDocuments(filter),
+  ]);
+
+  return {
+    data: files.map(toPublicFile),
+    total,
+    page: query.page,
+    limit: query.limit,
+  };
+}
+
+export async function listAllFiles(
+  actor: FileActor,
+  query: ListFilesQuery,
+): Promise<FileListResult> {
+  const visibleProjects = await Project.find(buildProjectVisibilityFilter(actor)).select('_id');
+  const projectIds = visibleProjects.map((project) => project._id);
+  const filter: QueryFilter<FileAttributes> = { project: { $in: projectIds } };
+
+  if (query.projectId) {
+    const requestedProjectId = new Types.ObjectId(query.projectId);
+    filter.project = projectIds.some((id) => id.equals(requestedProjectId))
+      ? requestedProjectId
+      : { $in: [] };
+  }
+
+  if (query.folder) {
+    filter.folder = query.folder;
+  }
+
+  if (query.search) {
+    filter.originalName = { $regex: escapeRegExp(query.search), $options: 'i' };
+  }
+
+  if (!isStaff(actor)) {
+    filter.isInternal = false;
+  }
+
+  const direction = query.sortOrder === 'asc' ? 1 : -1;
+  const skip = (query.page - 1) * query.limit;
+  const sortField = query.sortBy === 'name' ? 'originalName' : query.sortBy;
+  const sort: Record<string, 1 | -1> =
+    sortField === 'createdAt'
+      ? { createdAt: direction }
+      : { [sortField]: direction, createdAt: -1 };
+
+  const [files, total] = await Promise.all([
+    File.find(filter)
+      .populate(FILE_LIST_POPULATE)
       .sort(sort)
       .skip(skip)
       .limit(query.limit),
