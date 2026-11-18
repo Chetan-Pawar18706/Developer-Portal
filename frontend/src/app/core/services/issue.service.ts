@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import type { ApiResponse, PaginatedData } from '../models/api.model';
 import type {
   CreateIssueRequest,
+  GlobalIssueListQuery,
   Issue,
   IssueListQuery,
   UpdateIssueRequest,
@@ -19,6 +20,22 @@ export class IssueService {
   private readonly projectsUrl = `${environment.apiUrl}/projects`;
 
   list(projectId: string, query: IssueListQuery): Observable<PaginatedData<Issue>> {
+    return this.http
+      .get<ApiResponse<PaginatedData<Issue>>>(`${this.projectsUrl}/${projectId}/issues`, {
+        params: this.buildListParams(query),
+      })
+      .pipe(map((response) => response.data));
+  }
+
+  listAll(query: GlobalIssueListQuery): Observable<PaginatedData<Issue>> {
+    return this.http
+      .get<ApiResponse<PaginatedData<Issue>>>(this.baseUrl, {
+        params: this.buildListParams(query),
+      })
+      .pipe(map((response) => response.data));
+  }
+
+  private buildListParams(query: GlobalIssueListQuery): HttpParams {
     let params = new HttpParams()
       .set('page', query.page)
       .set('limit', query.limit)
@@ -45,11 +62,11 @@ export class IssueService {
       params = params.set('assignedTo', query.assignedTo);
     }
 
-    return this.http
-      .get<ApiResponse<PaginatedData<Issue>>>(`${this.projectsUrl}/${projectId}/issues`, {
-        params,
-      })
-      .pipe(map((response) => response.data));
+    if (query.projectId) {
+      params = params.set('projectId', query.projectId);
+    }
+
+    return params;
   }
 
   create(projectId: string, input: CreateIssueRequest): Observable<Issue> {

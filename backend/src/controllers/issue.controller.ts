@@ -3,6 +3,7 @@ import type { IssueDocument } from '../models/issue.model';
 import type { ProjectDocument } from '../models/project.model';
 import type {
   CreateIssueInput,
+  ListAllIssuesQuery,
   ListIssuesQuery,
   UpdateIssueInput,
   UpdateIssueStatusInput,
@@ -33,6 +34,15 @@ function requireIssue(req: Request): IssueDocument {
   }
 
   return req.issue;
+}
+
+export async function listAllIssues(req: Request, res: Response): Promise<void> {
+  const result = await issueService.listAllIssues(
+    requireActor(req),
+    req.query as unknown as ListAllIssuesQuery,
+  );
+
+  sendPaginated(res, result.data, result.total, result.page, result.limit, 'Issues retrieved');
 }
 
 export async function listProjectIssues(req: Request, res: Response): Promise<void> {

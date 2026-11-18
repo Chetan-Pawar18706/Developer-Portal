@@ -23,7 +23,7 @@ export const projectIssueParamSchema = z.object({
   id: objectIdSchema,
 });
 
-export const listIssuesQuerySchema = z.object({
+const listIssuesBaseSchema = z.object({
   search: z.string().trim().max(200).optional(),
   type: z.enum(ISSUE_TYPES).optional(),
   severity: z.enum(ISSUE_SEVERITIES).optional(),
@@ -35,6 +35,12 @@ export const listIssuesQuerySchema = z.object({
     .enum(['createdAt', 'updatedAt', 'title', 'severity', 'status'])
     .default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export const listIssuesQuerySchema = listIssuesBaseSchema;
+
+export const listAllIssuesQuerySchema = listIssuesBaseSchema.extend({
+  projectId: objectIdSchema.optional(),
 });
 
 export const createIssueSchema = z.object({
@@ -66,6 +72,7 @@ export const updateIssueStatusSchema = z.object({
 });
 
 export type ListIssuesQuery = z.infer<typeof listIssuesQuerySchema>;
+export type ListAllIssuesQuery = z.infer<typeof listAllIssuesQuerySchema>;
 export type CreateIssueInput = z.infer<typeof createIssueSchema>;
 export type UpdateIssueInput = z.infer<typeof updateIssueSchema>;
 export type UpdateIssueStatusInput = z.infer<typeof updateIssueStatusSchema>;

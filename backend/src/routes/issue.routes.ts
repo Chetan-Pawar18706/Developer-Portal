@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate';
 import { asyncHandler } from '../utils/asyncHandler';
 import {
   issueIdParamSchema,
+  listAllIssuesQuerySchema,
   updateIssueSchema,
   updateIssueStatusSchema,
 } from './issue.schemas';
@@ -13,6 +14,12 @@ import {
 export const issueRouter = Router();
 
 issueRouter.use(authenticate);
+
+issueRouter.get(
+  '/',
+  validate({ query: listAllIssuesQuerySchema }),
+  asyncHandler(issueController.listAllIssues),
+);
 
 issueRouter.get(
   '/:id',

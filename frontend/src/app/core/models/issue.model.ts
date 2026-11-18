@@ -94,6 +94,10 @@ export interface IssueListQuery extends Omit<
   assignedTo?: string;
 }
 
+export interface GlobalIssueListQuery extends IssueListQuery {
+  projectId?: string;
+}
+
 export interface CreateIssueRequest {
   title: string;
   description: string;

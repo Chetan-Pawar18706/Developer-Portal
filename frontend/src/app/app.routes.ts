@@ -236,11 +236,11 @@ export const routes: Routes = [
         data: {
           title: 'Issues',
           icon: 'bug_report',
-          description: "Open a project's Issues tab to raise and track delivery blockers.",
+          description: 'Follow every issue across the projects you can access.',
         },
         loadComponent: () =>
-          import('./shared/components/placeholder-page/placeholder-page.component').then(
-            (module) => module.PlaceholderPageComponent,
+          import('./features/issues/global-issues.component').then(
+            (module) => module.GlobalIssuesComponent,
           ),
       },
       {

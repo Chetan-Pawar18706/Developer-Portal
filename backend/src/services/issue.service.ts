@@ -6,18 +6,20 @@ import {
   type IssueDocument,
   type IssueStatus,
 } from '../models/issue.model';
-import type { ProjectDocument } from '../models/project.model';
+import { Project, type ProjectDocument } from '../models/project.model';
 import type { TaskPriority, TaskStatus } from '../models/task.model';
 import { User, type UserRole } from '../models/user.model';
 import type {
   CreateIssueInput,
   IssueAttachmentInput,
+  ListAllIssuesQuery,
   ListIssuesQuery,
   UpdateIssueInput,
   UpdateIssueStatusInput,
 } from '../routes/issue.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { buildProjectVisibilityFilter } from './project.service';
 import {
   createTaskFromIssue,
   getTask,
@@ -193,12 +195,16 @@ async function findPopulatedIssue(issueId: string): Promise<IssueDocument> {
 }
 
 function buildListFilter(
-  projectId: string,
-  query: ListIssuesQuery,
+  query: ListIssuesQuery | ListAllIssuesQuery,
+  projectId?: string,
 ): QueryFilter<IssueAttributes> {
-  const filter: QueryFilter<IssueAttributes> = {
-    project: new Types.ObjectId(projectId),
-  };
+  const filter: QueryFilter<IssueAttributes> = {};
+  const scopedProjectId =
+    projectId ?? ('projectId' in query ? query.projectId : undefined);
+
+  if (scopedProjectId) {
+    filter.project = new Types.ObjectId(scopedProjectId);
+  }
 
   if (query.search) {
     const pattern = new RegExp(escapeRegExp(query.search), 'i');
@@ -316,11 +322,10 @@ function attachmentValues(
   }));
 }
 
-export async function listIssues(
-  project: ProjectDocument,
-  query: ListIssuesQuery,
+async function runIssueList(
+  filter: QueryFilter<IssueAttributes>,
+  query: ListIssuesQuery | ListAllIssuesQuery,
 ): Promise<IssueListResult> {
-  const filter = buildListFilter(project._id.toString(), query);
   const direction = query.sortOrder === 'asc' ? 1 : -1;
   const skip = (query.page - 1) * query.limit;
 
@@ -339,6 +344,39 @@ export async function listIssues(
     page: query.page,
     limit: query.limit,
   };
+}
+
+export async function listIssues(
+  project: ProjectDocument,
+  query: ListIssuesQuery,
+): Promise<IssueListResult> {
+  const filter = buildListFilter(query, project._id.toString());
+  return runIssueList(filter, query);
+}
+
+export async function listAllIssues(
+  actor: IssueActor,
+  query: ListAllIssuesQuery,
+): Promise<IssueListResult> {
+  const projectFilter = buildProjectVisibilityFilter(actor);
+
+  if (query.projectId) {
+    projectFilter._id = new Types.ObjectId(query.projectId);
+  }
+
+  const visibleProjects = await Project.find(projectFilter).select('_id');
+
+  if (query.projectId && visibleProjects.length === 0) {
+    throw new ApiError(404, 'Project not found');
+  }
+
+  if (visibleProjects.length === 0) {
+    return { data: [], total: 0, page: query.page, limit: query.limit };
+  }
+
+  const filter = buildListFilter(query);
+  filter.project = { $in: visibleProjects.map((project) => project._id) };
+  return runIssueList(filter, query);
 }
 
 export async function getIssue(issueId: string): Promise<PublicIssue> {

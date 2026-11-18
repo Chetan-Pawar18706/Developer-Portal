@@ -162,6 +162,31 @@ describe('/api/issues/:id/status', () => {
   });
 });
 
+describe('/api/issues', () => {
+  it('lists issues from projects the actor can access', async () => {
+    await request(app)
+      .post(`/api/projects/${project.id}/issues`)
+      .set('Authorization', auth(client))
+      .send(issuePayload());
+
+    const globalList = await request(app)
+      .get('/api/issues')
+      .set('Authorization', auth(pm))
+      .query({ search: 'checkout', projectId: project.id });
+
+    expect(globalList.status).toBe(200);
+    expect(globalList.body.data.total).toBe(1);
+    expect(globalList.body.data.data[0].projectId).toBe(project.id);
+
+    const outsiderList = await request(app)
+      .get('/api/issues')
+      .set('Authorization', auth(outsider));
+
+    expect(outsiderList.status).toBe(200);
+    expect(outsiderList.body.data.total).toBe(0);
+  });
+});
+
 describe('issue comments', () => {
   it('resolves the issue project so the shared comment thread works', async () => {
     const created = await request(app)
