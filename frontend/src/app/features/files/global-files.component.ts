@@ -28,7 +28,9 @@ import {
   type FileFolder,
   type ProjectFile,
 } from '../../core/models/file.model';
+import type { Project, ProjectListQuery } from '../../core/models/project.model';
 import { FileService } from '../../core/services/file.service';
+import { ProjectService } from '../../core/services/project.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../shared/components/loading-skeleton/loading-skeleton.component';
 import {
@@ -61,6 +63,7 @@ type FolderFilter = FileFolder | 'all';
 })
 export class GlobalFilesComponent implements OnInit {
   private readonly fileService = inject(FileService);
+  private readonly projectService = inject(ProjectService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -68,7 +71,9 @@ export class GlobalFilesComponent implements OnInit {
   readonly folderLabels = FILE_FOLDER_LABELS;
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly folderControl = new FormControl<FolderFilter>('all', { nonNullable: true });
+  readonly projectControl = new FormControl('', { nonNullable: true });
 
+  readonly projects = signal<readonly Project[]>([]);
   readonly files = signal<ProjectFile[]>([]);
   readonly loading = signal(true);
   readonly error = signal('');
@@ -84,6 +89,11 @@ export class GlobalFilesComponent implements OnInit {
       .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.load());
 
+    this.projectControl.valueChanges
+      .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.load());
+
+    this.loadProjects();
     this.load();
   }
 
@@ -94,6 +104,7 @@ export class GlobalFilesComponent implements OnInit {
 
     this.fileService
       .listAll({
+        projectId: this.projectControl.value || undefined,
         folder: folder === 'all' ? undefined : folder,
         search: this.searchControl.value.trim() || undefined,
         limit: 100,
@@ -138,5 +149,20 @@ export class GlobalFilesComponent implements OnInit {
         link.click();
         URL.revokeObjectURL(url);
       });
+  }
+
+  private loadProjects(): void {
+    const query: ProjectListQuery = {
+      search: '',
+      page: 1,
+      limit: 100,
+      sortBy: 'title',
+      sortOrder: 'asc',
+    };
+
+    this.projectService.list(query).subscribe({
+      next: (result) => this.projects.set(result.data),
+      error: () => this.projects.set([]),
+    });
   }
 }
