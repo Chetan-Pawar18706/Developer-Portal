@@ -13,6 +13,7 @@ import {
   loginSchema,
   registerSchema,
   resetPasswordSchema,
+  updateProfileSchema,
 } from './auth.schemas';
 
 export const authRouter = Router();
@@ -49,3 +50,10 @@ authRouter.post(
 );
 
 authRouter.get('/me', authenticate, asyncHandler(authController.me));
+
+authRouter.patch(
+  '/profile',
+  authenticate,
+  validate({ body: updateProfileSchema }),
+  asyncHandler(authController.updateProfile),
+);

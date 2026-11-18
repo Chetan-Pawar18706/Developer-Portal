@@ -5,6 +5,7 @@ import type {
   LoginInput,
   RegisterInput,
   ResetPasswordInput,
+  UpdateProfileInput,
 } from '../routes/auth.schemas';
 import { ApiError } from '../utils/ApiError';
 import {
@@ -73,4 +74,16 @@ export async function me(req: Request, res: Response): Promise<void> {
 
   const user = await authService.getCurrentUser(req.user.id);
   sendSuccess(res, { user });
+}
+
+export async function updateProfile(req: Request, res: Response): Promise<void> {
+  if (!req.user) {
+    throw new ApiError(401, 'Authentication required');
+  }
+
+  const user = await authService.updateProfile(
+    req.user.id,
+    req.body as UpdateProfileInput,
+  );
+  sendSuccess(res, { user }, 'Profile updated');
 }

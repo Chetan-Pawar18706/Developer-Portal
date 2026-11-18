@@ -32,6 +32,7 @@ import type {
 } from '../routes/task.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { notify } from './notification.service';
 import { buildProjectVisibilityFilter } from './project.service';
 
 const TASK_POPULATE = [
@@ -384,6 +385,58 @@ async function requireRequirementInProject(
   }
 }
 
+async function notifyTaskAssignment(
+  task: TaskDocument,
+  actorId: string,
+  assigneeId: string,
+): Promise<void> {
+  if (assigneeId === actorId) {
+    return;
+  }
+
+  await notify([assigneeId], {
+    projectId: task.project.toString(),
+    type: 'task_assigned',
+    message: `You were assigned to the task "${task.title}".`,
+    link: `/projects/${task.project.toString()}/tasks`,
+  });
+}
+
+async function notifyClientReview(
+  task: TaskDocument,
+  project: ProjectDocument,
+  actorId: string,
+  reviewStatus: 'approved' | 'changes_requested',
+): Promise<void> {
+  const recipients = new Set<string>();
+
+  if (task.assignee) {
+    recipients.add(task.assignee.toString());
+  }
+
+  if (task.reporter) {
+    recipients.add(task.reporter.toString());
+  }
+
+  for (const member of project.members) {
+    if (member.role === 'pm') {
+      recipients.add(member.user.toString());
+    }
+  }
+
+  recipients.delete(actorId);
+
+  const action =
+    reviewStatus === 'approved' ? 'approved' : 'requested changes on';
+
+  await notify([...recipients], {
+    projectId: task.project.toString(),
+    type: 'task_client_review',
+    message: `The client ${action} the task "${task.title}".`,
+    link: `/projects/${task.project.toString()}/tasks`,
+  });
+}
+
 async function findPopulatedTask(taskId: string): Promise<TaskDocument> {
   const task = await Task.findById(taskId).populate(TASK_POPULATE);
 
@@ -702,6 +755,10 @@ export async function createTask(
     },
   });
 
+  if (input.assigneeId) {
+    await notifyTaskAssignment(task, actor.id, input.assigneeId);
+  }
+
   return getTask(task.id);
 }
 
@@ -764,6 +821,10 @@ export async function createTaskFromIssue(
     },
   });
 
+  if (input.assigneeId) {
+    await notifyTaskAssignment(task, actor.id, input.assigneeId);
+  }
+
   return getTask(task.id);
 }
 
@@ -798,6 +859,7 @@ export async function updateTask(
   }
 
   const previousStatus = task.status;
+  const previousAssignee = task.assignee?.toString() ?? null;
 
   if (input.title !== undefined) {
     task.title = input.title;
@@ -849,6 +911,13 @@ export async function updateTask(
         .map(([field]) => field),
     },
   });
+
+  if (
+    input.assigneeId &&
+    input.assigneeId !== previousAssignee
+  ) {
+    await notifyTaskAssignment(task, actor.id, input.assigneeId);
+  }
 
   if (input.status !== undefined && input.status !== previousStatus) {
     const targetOrder = await nextOrder(task.project, input.status);
@@ -1081,6 +1150,8 @@ export async function reviewTaskAsClient(
       to: targetStatus,
     },
   });
+
+  await notifyClientReview(task, project, actor.id, input.status);
 
   return getTask(task.id);
 }

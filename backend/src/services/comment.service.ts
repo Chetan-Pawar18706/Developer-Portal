@@ -8,7 +8,7 @@ import {
   type CommentDocument,
 } from '../models/comment.model';
 import type { ProjectDocument } from '../models/project.model';
-import type { UserRole } from '../models/user.model';
+import { User, type UserRole } from '../models/user.model';
 import type {
   CreateCommentInput,
   ListCommentsQuery,
@@ -17,6 +17,7 @@ import type {
 } from '../routes/comment.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { notify } from './notification.service';
 
 const COMMENT_POPULATE = [
   { path: 'author', select: 'name email role avatar' },
@@ -327,6 +328,62 @@ export async function listComments(
   };
 }
 
+function commentLink(
+  projectId: string,
+  entityType: PublicComment['entityType'],
+  entityId: string,
+): string {
+  const base = `/projects/${projectId}`;
+
+  switch (entityType) {
+    case 'project':
+      return `${base}/discussion`;
+    case 'requirement':
+      return `${base}/requirements/${entityId}`;
+    case 'task':
+      return `${base}/tasks`;
+    case 'issue':
+      return `${base}/issues/${entityId}`;
+  }
+}
+
+async function notifyMentions(
+  comment: CommentDocument,
+  project: ProjectDocument,
+  actor: CommentActor,
+  isInternal: boolean,
+): Promise<void> {
+  let recipients = comment.mentions
+    .map((id) => id.toString())
+    .filter((id) => id !== actor.id);
+
+  if (recipients.length === 0) {
+    return;
+  }
+
+  if (isInternal) {
+    const users = await User.find({ _id: { $in: recipients } }).select('role');
+    recipients = users
+      .filter((user) => user.role !== 'client')
+      .map((user) => user.id);
+  }
+
+  if (recipients.length === 0) {
+    return;
+  }
+
+  await notify(recipients, {
+    projectId: project._id.toString(),
+    type: 'mention',
+    message: `You were mentioned in a comment on this ${comment.entityType}.`,
+    link: commentLink(
+      project._id.toString(),
+      comment.entityType,
+      comment.entityId.toString(),
+    ),
+  });
+}
+
 export async function createComment(
   project: ProjectDocument,
   actor: CommentActor,
@@ -366,6 +423,8 @@ export async function createComment(
       isInternal: comment.isInternal,
     },
   });
+
+  await notifyMentions(comment, project, actor, input.isInternal);
 
   return toPublicComment(
     await findPopulatedComment(comment.id),

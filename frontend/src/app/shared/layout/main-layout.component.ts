@@ -1,4 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -25,9 +27,14 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
+import { filter, interval, map, startWith } from 'rxjs';
+import type {
+  Notification,
+  NotificationType,
+} from '../../core/models/notification.model';
 import { ROLE_LABELS, type Role } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { UserAvatarComponent } from '../components/user-avatar/user-avatar.component';
 
@@ -88,9 +95,11 @@ const NAV_ITEMS: readonly NavItem[] = [
   selector: 'app-main-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DatePipe,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
+    MatBadgeModule,
     MatSidenavModule,
     MatToolbarModule,
     MatListModule,
@@ -108,12 +117,15 @@ const NAV_ITEMS: readonly NavItem[] = [
 })
 export class MainLayoutComponent {
   private readonly auth = inject(AuthService);
+  private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly breakpoint = inject(BreakpointObserver);
   readonly theme = inject(ThemeService);
 
   readonly user = this.auth.currentUser;
   readonly role = this.auth.role;
+  readonly unreadCount = signal(0);
+  readonly latestNotifications = signal<readonly Notification[]>([]);
 
   readonly roleLabel = computed(() => {
     const role = this.role();
@@ -148,11 +160,15 @@ export class MainLayoutComponent {
 
   readonly pageTitle = computed(() => {
     const url = this.currentUrl();
+    const staticTitles: Record<string, string> = {
+      '/notifications': 'Notifications',
+      '/profile': 'Profile',
+    };
     const match = this.navigation().find(
       (item) => url === item.route || url.startsWith(`${item.route}/`),
     );
 
-    return match?.label ?? 'Dashboard';
+    return staticTitles[url] ?? match?.label ?? 'Dashboard';
   });
 
   constructor() {
@@ -170,6 +186,10 @@ export class MainLayoutComponent {
           this.sidenavOpen.set(false);
         }
       });
+
+    interval(30_000)
+      .pipe(startWith(0), takeUntilDestroyed())
+      .subscribe(() => this.refreshNotifications());
   }
 
   toggleSidenav(): void {
@@ -180,6 +200,65 @@ export class MainLayoutComponent {
     if (this.isHandset()) {
       this.sidenavOpen.set(false);
     }
+  }
+
+  notificationIcon(type: NotificationType): string {
+    switch (type) {
+      case 'task_assigned':
+        return 'assignment';
+      case 'mention':
+        return 'alternate_email';
+      case 'issue_status_changed':
+        return 'bug_report';
+      case 'task_client_review':
+      case 'task_due_reminder':
+      case 'task_overdue':
+        return 'task_alt';
+      case 'project_status_changed':
+        return 'folder_open';
+      case 'requirement_status_changed':
+        return 'assignment_turned_in';
+    }
+  }
+
+  openNotification(notification: Notification): void {
+    if (!notification.isRead) {
+      this.notifications.markAsRead(notification.id).subscribe({
+        next: () => this.refreshNotifications(),
+        error: () => undefined,
+      });
+    }
+
+    void this.router.navigateByUrl(notification.link);
+  }
+
+  markAllNotificationsRead(): void {
+    this.notifications.markAllAsRead().subscribe({
+      next: () => this.refreshNotifications(),
+      error: () => undefined,
+    });
+  }
+
+  openAllNotifications(): void {
+    void this.router.navigate(['/notifications']);
+  }
+
+  openProfile(): void {
+    void this.router.navigate(['/profile']);
+  }
+
+  private refreshNotifications(): void {
+    this.notifications.unreadCount().subscribe({
+      next: (count) => this.unreadCount.set(count),
+      error: () => undefined,
+    });
+
+    this.notifications
+      .list({ page: 1, limit: 10, sortBy: 'createdAt', sortOrder: 'desc' })
+      .subscribe({
+        next: (result) => this.latestNotifications.set(result.data),
+        error: () => undefined,
+      });
   }
 
   logout(): void {

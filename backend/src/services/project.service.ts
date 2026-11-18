@@ -21,6 +21,7 @@ import type {
   UpdateProjectStatusInput,
 } from '../routes/project.schemas';
 import { logActivity } from './activity.service';
+import { notifyProjectTeam } from './notification.service';
 
 export const PROJECT_STATUS_TRANSITIONS: Record<ProjectStatus, readonly ProjectStatus[]> = {
   draft: ['submitted'],
@@ -613,6 +614,18 @@ export async function changeProjectStatus(
       ...(input.status === 'completed' ? { signedOff: true } : {}),
     },
   });
+
+  await notifyProjectTeam(
+    project,
+    actor.id,
+    {
+      projectId: project._id.toString(),
+      type: 'project_status_changed',
+      message: `Project "${project.title}" changed from ${from} to ${input.status}.`,
+      link: `/projects/${project._id.toString()}`,
+    },
+    { includeAllMembers: true },
+  );
 
   return getProject(project.id);
 }

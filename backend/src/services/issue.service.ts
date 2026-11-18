@@ -19,6 +19,7 @@ import type {
 } from '../routes/issue.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { notify } from './notification.service';
 import { buildProjectVisibilityFilter } from './project.service';
 import {
   createTaskFromIssue,
@@ -536,6 +537,21 @@ export async function changeIssueStatus(
       to: input.status,
       note: input.note,
     },
+  });
+
+  const recipients = new Set<string>([issue.raisedBy.toString()]);
+
+  if (issue.assignedTo) {
+    recipients.add(issue.assignedTo.toString());
+  }
+
+  recipients.delete(actor.id);
+
+  await notify([...recipients], {
+    projectId: issue.project.toString(),
+    type: 'issue_status_changed',
+    message: `Issue "${issue.title}" changed from ${previousStatus} to ${input.status}.`,
+    link: `/projects/${issue.project.toString()}/issues/${issue._id.toString()}`,
   });
 
   return getIssue(issue.id);

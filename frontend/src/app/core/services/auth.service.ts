@@ -3,7 +3,14 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, firstValueFrom, map, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import type { ApiResponse } from '../models/api.model';
-import type { AuthResponse, LoginRequest, RegisterRequest, Role, User } from '../models/user.model';
+import type {
+  AuthResponse,
+  LoginRequest,
+  RegisterRequest,
+  Role,
+  UpdateProfileRequest,
+  User,
+} from '../models/user.model';
 
 const SESSION_HINT_KEY = 'project-platform.has-session';
 
@@ -51,6 +58,15 @@ export class AuthService {
       tap((response) => this.currentUserSignal.set(response.data.user)),
       map((response) => response.data.user),
     );
+  }
+
+  updateProfile(input: UpdateProfileRequest): Observable<User> {
+    return this.http
+      .patch<ApiResponse<{ user: User }>>(`${this.baseUrl}/profile`, input)
+      .pipe(
+        tap((response) => this.currentUserSignal.set(response.data.user)),
+        map((response) => response.data.user),
+      );
   }
 
   logout(): Observable<void> {

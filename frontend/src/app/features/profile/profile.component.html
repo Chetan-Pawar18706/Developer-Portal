@@ -1,0 +1,75 @@
+<section class="profile-page">
+  <header class="page-header">
+    <p class="eyebrow">Personal settings</p>
+    <h1>Profile</h1>
+    <p class="subtitle">Update your display name and choose which updates reach your inbox.</p>
+  </header>
+
+  @if (error(); as errorMessage) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+  }
+
+  @if (saved()) {
+    <div class="success-banner" role="status">
+      <mat-icon>check_circle</mat-icon>
+      <span>Profile updated.</span>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="save()">
+    @if (saving()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <mat-card appearance="outlined" class="settings-card">
+      <mat-card-header>
+        <mat-card-title>Personal details</mat-card-title>
+        <mat-card-subtitle>This name is shown to clients and teammates.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="name-field">
+          <mat-label>Full name</mat-label>
+          <input matInput formControlName="name" autocomplete="name" />
+          @if (form.controls.name.hasError('required')) {
+            <mat-error>Name is required.</mat-error>
+          } @else if (form.controls.name.invalid) {
+            <mat-error>Use between 2 and 80 characters.</mat-error>
+          }
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="settings-card">
+      <mat-card-header>
+        <mat-card-title>Email notifications</mat-card-title>
+        <mat-card-subtitle>
+          In-app notifications are always created; these toggles control email delivery.
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content formGroupName="notificationPrefs" class="preference-list">
+        <mat-slide-toggle formControlName="emailOnAssignment">
+          Task assignments
+        </mat-slide-toggle>
+        <mat-slide-toggle formControlName="emailOnMention">
+          Comments that mention me
+        </mat-slide-toggle>
+        <mat-slide-toggle formControlName="emailOnStatusChange">
+          Requirement, issue, task review, and project status changes
+        </mat-slide-toggle>
+        <mat-slide-toggle formControlName="emailOnReminder">
+          Due-soon and overdue task reminders
+        </mat-slide-toggle>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="actions">
+      <button mat-flat-button color="primary" type="submit" [disabled]="saving()">
+        <mat-icon>save</mat-icon>
+        Save changes
+      </button>
+    </div>
+  </form>
+</section>

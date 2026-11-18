@@ -256,6 +256,30 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'notifications',
+        data: {
+          title: 'Notifications',
+          icon: 'notifications',
+          description: 'Assignments, mentions, reviews, and reminders.',
+        },
+        loadComponent: () =>
+          import('./features/notifications/notifications.component').then(
+            (module) => module.NotificationsComponent,
+          ),
+      },
+      {
+        path: 'profile',
+        data: {
+          title: 'Profile',
+          icon: 'settings',
+          description: 'Update your name and email notification preferences.',
+        },
+        loadComponent: () =>
+          import('./features/profile/profile.component').then(
+            (module) => module.ProfileComponent,
+          ),
+      },
+      {
         path: 'communication',
         data: {
           title: 'Messages',

@@ -1,6 +1,7 @@
 import {
   User,
   hashPassword,
+  type NotificationPreferences,
   type UserDocument,
   type UserRole,
 } from '../models/user.model';
@@ -14,6 +15,7 @@ export interface CreateUserOptions {
   password?: string;
   role?: UserRole;
   isActive?: boolean;
+  notificationPrefs?: Partial<NotificationPreferences>;
 }
 
 export async function createUser(options: CreateUserOptions = {}): Promise<UserDocument> {
@@ -23,6 +25,7 @@ export async function createUser(options: CreateUserOptions = {}): Promise<UserD
     password = defaultPassword,
     role = 'client',
     isActive = true,
+    notificationPrefs = {},
   } = options;
 
   return User.create({
@@ -31,6 +34,13 @@ export async function createUser(options: CreateUserOptions = {}): Promise<UserD
     passwordHash: await hashPassword(password),
     role,
     isActive,
+    notificationPrefs: {
+      emailOnAssignment: true,
+      emailOnMention: true,
+      emailOnStatusChange: true,
+      emailOnReminder: true,
+      ...notificationPrefs,
+    },
   });
 }
 

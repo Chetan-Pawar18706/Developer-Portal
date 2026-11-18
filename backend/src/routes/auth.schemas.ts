@@ -22,7 +22,26 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+export const updateProfileSchema = z
+  .object({
+    name: z.string().trim().min(2).max(80).optional(),
+    notificationPrefs: z
+      .object({
+        emailOnAssignment: z.boolean().optional(),
+        emailOnMention: z.boolean().optional(),
+        emailOnStatusChange: z.boolean().optional(),
+        emailOnReminder: z.boolean().optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined || value.notificationPrefs !== undefined,
+    { message: 'Provide a name or notification preference to update' },
+  );
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

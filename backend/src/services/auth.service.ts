@@ -1,6 +1,12 @@
 import { randomBytes } from 'node:crypto';
 import { env } from '../config/env';
-import { User, hashPassword, type UserDocument, type UserRole } from '../models/user.model';
+import {
+  User,
+  hashPassword,
+  type NotificationPreferences,
+  type UserDocument,
+  type UserRole,
+} from '../models/user.model';
 import { ApiError } from '../utils/ApiError';
 import { hashToken, signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/token';
 import { sendPasswordResetEmail } from './mail.service';
@@ -39,6 +45,11 @@ export interface RegisterInput {
 export interface LoginInput {
   email: string;
   password: string;
+}
+
+export interface UpdateProfileInput {
+  name?: string;
+  notificationPrefs?: Partial<NotificationPreferences>;
 }
 
 export function toPublicUser(user: UserDocument): PublicUser {
@@ -208,5 +219,30 @@ export async function getCurrentUser(userId: string): Promise<PublicUser> {
     throw new ApiError(404, 'User not found');
   }
 
+  return toPublicUser(user);
+}
+
+export async function updateProfile(
+  userId: string,
+  input: UpdateProfileInput,
+): Promise<PublicUser> {
+  const user = await User.findById(userId);
+
+  if (!user || !user.isActive) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  if (input.name !== undefined) {
+    user.name = input.name;
+  }
+
+  if (input.notificationPrefs) {
+    user.notificationPrefs = {
+      ...user.notificationPrefs,
+      ...input.notificationPrefs,
+    };
+  }
+
+  await user.save();
   return toPublicUser(user);
 }

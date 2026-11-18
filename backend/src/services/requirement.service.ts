@@ -27,6 +27,7 @@ import type {
 } from '../routes/requirement.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
+import { notifyProjectTeam } from './notification.service';
 import { buildProjectVisibilityFilter } from './project.service';
 
 const RICH_TEXT_OPTIONS: sanitizeHtml.IOptions = {
@@ -670,6 +671,18 @@ export async function changeRequirementStatus(
       ...(note ? { note } : {}),
     },
   });
+
+  await notifyProjectTeam(
+    project,
+    actor.id,
+    {
+      projectId: project._id.toString(),
+      type: 'requirement_status_changed',
+      message: `Requirement "${requirement.title}" changed from ${from} to ${input.status}.`,
+      link: `/projects/${project._id.toString()}/requirements/${requirement._id.toString()}`,
+    },
+    { roles: ['pm'] },
+  );
 
   return getRequirement(requirement.id);
 }

@@ -37,6 +37,11 @@ export interface RegisterRequest {
   password: string;
 }
 
+export interface UpdateProfileRequest {
+  name?: string;
+  notificationPrefs?: Partial<NotificationPreferences>;
+}
+
 export interface CreateUserRequest {
   name: string;
   email: string;

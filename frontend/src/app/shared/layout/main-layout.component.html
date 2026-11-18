@@ -76,10 +76,59 @@
         class="icon-button"
         matTooltip="Notifications"
         aria-label="Notifications"
+        [matMenuTriggerFor]="notificationMenu"
+        [matBadge]="unreadCount()"
+        [matBadgeHidden]="unreadCount() === 0"
+        matBadgeColor="warn"
+        matBadgeSize="small"
       >
         <mat-icon>notifications</mat-icon>
-        <span class="notification-dot" aria-hidden="true"></span>
       </button>
+
+      <mat-menu #notificationMenu="matMenu" xPosition="before" class="notification-menu">
+        <div class="notification-summary">
+          <strong>Notifications</strong>
+          <span>{{ unreadCount() }} unread</span>
+        </div>
+        <mat-divider />
+
+        @if (latestNotifications().length === 0) {
+          <div class="notification-empty">You're all caught up.</div>
+        } @else {
+          @for (notification of latestNotifications(); track notification.id) {
+            <button
+              mat-menu-item
+              type="button"
+              class="notification-item"
+              (click)="openNotification(notification)"
+            >
+              <mat-icon>{{ notificationIcon(notification.type) }}</mat-icon>
+              <span class="notification-copy">
+                <span class="notification-message">{{ notification.message }}</span>
+                <small>{{ notification.createdAt | date: 'MMM d, HH:mm' }}</small>
+              </span>
+              @if (!notification.isRead) {
+                <span class="unread-marker" aria-label="Unread"></span>
+              }
+            </button>
+          }
+        }
+
+        <mat-divider />
+        <button mat-menu-item type="button" (click)="openAllNotifications()">
+          <mat-icon>visibility</mat-icon>
+          <span>View all notifications</span>
+        </button>
+        <button
+          mat-menu-item
+          type="button"
+          [disabled]="unreadCount() === 0"
+          (click)="markAllNotificationsRead()"
+        >
+          <mat-icon>done_all</mat-icon>
+          <span>Mark all as read</span>
+        </button>
+      </mat-menu>
 
       <button
         mat-icon-button
@@ -113,6 +162,10 @@
           <span class="profile-role">{{ roleLabel() }}</span>
         </div>
         <mat-divider />
+        <button mat-menu-item type="button" (click)="openProfile()">
+          <mat-icon>settings</mat-icon>
+          <span>Profile settings</span>
+        </button>
         <button mat-menu-item type="button" (click)="logout()">
           <mat-icon>logout</mat-icon>
           <span>Log out</span>

@@ -159,15 +159,62 @@
   position: relative;
 }
 
-.notification-dot {
-  position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
-  width: 0.45rem;
-  height: 0.45rem;
+.notification-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  min-width: 18rem;
+
+  strong {
+    font-size: 0.9rem;
+  }
+
+  span {
+    color: var(--mat-sys-primary);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+}
+
+.notification-empty {
+  padding: 1.25rem 1rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.notification-item {
+  height: auto !important;
+  padding-top: 0.55rem !important;
+  padding-bottom: 0.55rem !important;
+  white-space: normal !important;
+}
+
+.notification-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  line-height: 1.35;
+}
+
+.notification-message {
+  font-size: 0.82rem;
+}
+
+.notification-copy small {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.68rem;
+}
+
+.unread-marker {
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.5rem;
   border-radius: 50%;
-  background: var(--mat-sys-error);
-  border: 2px solid var(--mat-sys-surface);
+  background: var(--mat-sys-primary);
 }
 
 .profile-button {
