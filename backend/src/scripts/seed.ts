@@ -84,36 +84,40 @@ interface SeedProject {
   activity: SeedActivity[];
 }
 
+function demoPassword(name: string, fallback: string): string {
+  return process.env[name] ?? fallback;
+}
+
 const seedUsers: readonly SeedUser[] = [
   {
     name: 'DevPortal Admin',
     email: 'admin@devpor.com',
     role: 'admin',
-    password: 'Admin@123',
+    password: demoPassword('SEED_ADMIN_PASSWORD', 'Admin@123'),
   },
   {
     name: 'Chetan Pawar',
     email: 'chetanpawar18706@gmail.com',
     role: 'pm',
-    password: 'Chetan@123',
+    password: demoPassword('SEED_PM_PASSWORD', 'Chetan@123'),
   },
   {
     name: 'Raghav Shastri',
     email: 'raghavshastri@gmail.com',
     role: 'developer',
-    password: 'raghav@123',
+    password: demoPassword('SEED_DEVELOPER_PASSWORD', 'raghav@123'),
   },
   {
     name: 'Ishwari Kokankar',
     email: 'iswarikokankar@gmail.com',
     role: 'developer',
-    password: 'ishwari@123',
+    password: demoPassword('SEED_DEVELOPER_PASSWORD', 'ishwari@123'),
   },
   {
     name: 'Nikhil Sury',
     email: 'nikhilsury@gmail.com',
     role: 'client',
-    password: 'nikhil@123',
+    password: demoPassword('SEED_CLIENT_PASSWORD', 'nikhil@123'),
   },
 ];
 
@@ -887,7 +891,7 @@ async function seed(): Promise<void> {
     console.log('\nDemo accounts:');
 
     for (const user of seedUsers) {
-      console.log(`  ${user.role.padEnd(10)} ${user.email.padEnd(34)} ${user.password}`);
+      console.log(`  ${user.role.padEnd(10)} ${user.email}`);
     }
 
     console.log('\nProjects:');

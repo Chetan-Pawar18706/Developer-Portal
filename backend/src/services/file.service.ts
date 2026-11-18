@@ -35,7 +35,6 @@ export interface PublicUserSummary {
 }
 
 export interface PublicFileVersion {
-  storagePath: string;
   size: number;
   uploadedBy: PublicUserSummary | null;
   uploadedAt: Date;
@@ -162,7 +161,6 @@ function toPublicFile(file: FileDocument): PublicFile {
     isInternal: populated.isInternal,
     version: populated.version,
     versions: populated.versions.map((version) => ({
-      storagePath: version.storagePath,
       size: version.size,
       uploadedBy: toUserSummary(version.uploadedBy),
       uploadedAt: version.uploadedAt,

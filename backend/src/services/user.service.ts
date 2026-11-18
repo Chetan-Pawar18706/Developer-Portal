@@ -103,6 +103,7 @@ export async function updateUserRole(
 
   const user = await findUserOrThrow(targetId);
   user.role = role;
+  user.refreshTokenHash = null;
   await user.save();
 
   return toPublicUser(user);
@@ -119,6 +120,7 @@ export async function updateUserStatus(
 
   const user = await findUserOrThrow(targetId);
   user.isActive = isActive;
+  user.refreshTokenHash = null;
   await user.save();
 
   return toPublicUser(user);

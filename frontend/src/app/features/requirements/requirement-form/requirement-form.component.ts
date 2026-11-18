@@ -355,7 +355,8 @@ export class RequirementFormComponent implements OnInit {
   }
 
   private buildDraftKey(projectId: string, requirementId: string): string {
-    return `devportal.requirement-draft:${projectId}:${requirementId}`;
+    const userId = this.auth.currentUser()?.id ?? 'anonymous';
+    return `devportal.requirement-draft:${userId}:${projectId}:${requirementId}`;
   }
 
   private handleSaved(requirement: Requirement, message: string): void {

@@ -188,10 +188,6 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
   const resetUrl = `${env.CLIENT_URL}/reset-password?token=${token}`;
 
-  if (env.NODE_ENV !== 'test') {
-    console.log(`Password reset link for ${user.email}: ${resetUrl}`);
-  }
-
   try {
     await sendPasswordResetEmail(user.email, resetUrl);
   } catch (error) {

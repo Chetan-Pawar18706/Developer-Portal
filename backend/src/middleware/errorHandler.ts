@@ -29,7 +29,7 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _ne
         ? 'Files must be 25 MB or smaller'
         : error.code === 'LIMIT_FILE_COUNT'
           ? 'You can upload at most 20 files at once'
-          : `Upload failed: ${error.message}`;
+          : 'Upload failed';
 
     res.status(400).json({ success: false, data: null, message, details: [] });
     return;

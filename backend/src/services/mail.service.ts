@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
+import { escapeHtml } from './email.service';
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
   if (env.NODE_ENV === 'test') {
@@ -16,11 +17,13 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
     },
   });
 
+  const safeResetUrl = escapeHtml(resetUrl);
+
   await transporter.sendMail({
-    from: '"Developer Portal" <no-reply@developer-portal.local>',
+    from: env.SMTP_FROM,
     to,
     subject: 'Reset your password',
     text: `Reset your password using this link (valid for 1 hour): ${resetUrl}`,
-    html: `<p>Reset your password by clicking <a href="${resetUrl}">this link</a>.</p><p>The link is valid for 1 hour.</p>`,
+    html: `<p>Reset your password by clicking <a href="${safeResetUrl}">this link</a>.</p><p>The link is valid for 1 hour.</p>`,
   });
 }

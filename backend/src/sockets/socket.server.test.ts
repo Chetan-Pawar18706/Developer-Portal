@@ -173,10 +173,18 @@ describe('socket rooms', () => {
   it('keeps internal typing indicators inside the staff room', async () => {
     const clientSocket = socketFor(client);
     const pmSocket = socketFor(pm);
-    await Promise.all([waitForConnection(clientSocket), waitForConnection(pmSocket)]);
+    const observerPmSocket = socketFor(pm);
+    await Promise.all([
+      waitForConnection(clientSocket),
+      waitForConnection(pmSocket),
+      waitForConnection(observerPmSocket),
+    ]);
 
     const clientEvent = expectNoEvent(clientSocket, REALTIME_EVENTS.TYPING);
-    const pmEvent = waitForEvent<{ isInternal: boolean }>(pmSocket, REALTIME_EVENTS.TYPING);
+    const pmEvent = waitForEvent<{ isInternal: boolean }>(
+      observerPmSocket,
+      REALTIME_EVENTS.TYPING,
+    );
 
     pmSocket.emit('typing', {
       projectId: project.id,

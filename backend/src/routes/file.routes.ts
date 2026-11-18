@@ -3,9 +3,14 @@ import { upload } from '../config/multer';
 import * as fileController from '../controllers/file.controller';
 import { authenticate } from '../middleware/auth';
 import { fileAccess } from '../middleware/fileAccess';
+import { uploadRateLimiter } from '../middleware/rateLimit';
 import { validate } from '../middleware/validate';
 import { asyncHandler } from '../utils/asyncHandler';
-import { fileIdParamSchema, listFilesQuerySchema } from './file.schemas';
+import {
+  fileIdParamSchema,
+  listFilesQuerySchema,
+  newVersionBodySchema,
+} from './file.schemas';
 
 export const fileRouter = Router();
 
@@ -35,7 +40,9 @@ fileRouter.post(
   '/:id/new-version',
   validate({ params: fileIdParamSchema }),
   fileAccess,
+  uploadRateLimiter,
   upload.single('file'),
+  validate({ body: newVersionBodySchema }),
   asyncHandler(fileController.createFileVersion),
 );
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { httpAttachmentUrlSchema } from './common.schemas';
 import {
   REQUIREMENT_PRIORITIES,
   REQUIREMENT_STATUSES,
@@ -14,7 +15,7 @@ const acceptanceCriteriaSchema = z
 
 const attachmentInputSchema = z.object({
   name: z.string().trim().min(1).max(200),
-  url: z.string().trim().url('Attachment URL must be valid').max(2000),
+  url: httpAttachmentUrlSchema,
   mimeType: z.string().trim().max(120).default('application/octet-stream'),
   size: z.number().int().min(0).default(0),
 });

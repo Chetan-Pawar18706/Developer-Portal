@@ -9,6 +9,7 @@ import * as taskController from '../controllers/task.controller';
 import { allow } from '../middleware/allow';
 import { authenticate } from '../middleware/auth';
 import { projectAccess } from '../middleware/projectAccess';
+import { uploadRateLimiter } from '../middleware/rateLimit';
 import { validate } from '../middleware/validate';
 import { asyncHandler } from '../utils/asyncHandler';
 import {
@@ -141,6 +142,7 @@ projectRouter.post(
   '/:id/files',
   validate({ params: projectIdParamSchema }),
   projectAccess,
+  uploadRateLimiter,
   upload.array('files', 20),
   validate({ body: createFilesBodySchema }),
   asyncHandler(fileController.createProjectFiles),

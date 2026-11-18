@@ -175,18 +175,26 @@ async function resolveIdentity(socket: Socket): Promise<Identity> {
     throw new Error('Invalid token type');
   }
 
+  const user = await User.findById(payload.sub).select('role isActive').lean();
+
+  if (!user || !user.isActive) {
+    throw new Error('Inactive or missing user');
+  }
+
   const identity: Identity = {
     userId: payload.sub,
-    role: payload.role,
+    role: user.role,
     projectIds: [],
   };
   identity.projectIds = await authorizedProjectIds(identity);
   return identity;
 }
 
-function joinProject(socket: Socket, projectId: string): void {
-  const identity = identityOf(socket);
+async function refreshAuthorizedProjectIds(identity: Identity): Promise<void> {
+  identity.projectIds = await authorizedProjectIds(identity);
+}
 
+function joinProjectRooms(socket: Socket, projectId: string, identity: Identity): void {
   if (
     !Types.ObjectId.isValid(projectId) ||
     !identity.projectIds.includes(projectId)
@@ -199,6 +207,32 @@ function joinProject(socket: Socket, projectId: string): void {
   if (isStaff(identity.role)) {
     void socket.join(staffRoom(projectId));
   }
+}
+
+async function joinProject(socket: Socket, projectId: string): Promise<void> {
+  const identity = identityOf(socket);
+  await refreshAuthorizedProjectIds(identity);
+  joinProjectRooms(socket, projectId, identity);
+}
+
+export function revokeProjectAccess(userId: string, projectId: string): void {
+  if (!io) {
+    return;
+  }
+
+  for (const socket of io.sockets.sockets.values()) {
+    const identity = identityOf(socket);
+
+    if (identity?.userId !== userId) {
+      continue;
+    }
+
+    void socket.leave(projectRoom(projectId));
+    void socket.leave(staffRoom(projectId));
+    identity.projectIds = identity.projectIds.filter((id) => id !== projectId);
+  }
+
+  removePresence(projectId, userId);
 }
 
 export async function initSocketServer(httpServer: HttpServer): Promise<Server> {
@@ -222,7 +256,7 @@ export async function initSocketServer(httpServer: HttpServer): Promise<Server> 
     void socket.join(userRoom(identity.userId));
 
     for (const projectId of identity.projectIds) {
-      joinProject(socket, projectId);
+      joinProjectRooms(socket, projectId, identity);
     }
 
     void User.findById(identity.userId)
@@ -244,7 +278,7 @@ export async function initSocketServer(httpServer: HttpServer): Promise<Server> 
 
     socket.on('project:join', (projectId: unknown) => {
       if (typeof projectId === 'string') {
-        joinProject(socket, projectId);
+        void joinProject(socket, projectId);
       }
     });
 
@@ -259,26 +293,27 @@ export async function initSocketServer(httpServer: HttpServer): Promise<Server> 
     });
 
     socket.on('typing', (payload: TypingPayload) => {
-      if (
-        !payload ||
-        !Types.ObjectId.isValid(payload.projectId) ||
-        !identity.projectIds.includes(payload.projectId)
-      ) {
+      if (!payload || !Types.ObjectId.isValid(payload.projectId)) {
         return;
       }
 
-      if (payload.isInternal && !isStaff(identity.role)) {
-        return;
-      }
+      void refreshAuthorizedProjectIds(identity).then(() => {
+        if (
+          !identity.projectIds.includes(payload.projectId) ||
+          (payload.isInternal && !isStaff(identity.role))
+        ) {
+          return;
+        }
 
-      const room = payload.isInternal
-        ? staffRoom(payload.projectId)
-        : projectRoom(payload.projectId);
-      const member = presence.get(payload.projectId)?.get(identity.userId);
+        const room = payload.isInternal
+          ? staffRoom(payload.projectId)
+          : projectRoom(payload.projectId);
+        const member = presence.get(payload.projectId)?.get(identity.userId);
 
-      socket.to(room).emit(REALTIME_EVENTS.TYPING, {
-        ...payload,
-        user: member ?? { userId: identity.userId, name: 'Team member', role: identity.role },
+        socket.to(room).emit(REALTIME_EVENTS.TYPING, {
+          ...payload,
+          user: member ?? { userId: identity.userId, name: 'Team member', role: identity.role },
+        });
       });
     });
 

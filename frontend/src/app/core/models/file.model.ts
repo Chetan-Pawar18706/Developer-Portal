@@ -50,7 +50,6 @@ export interface FileUserSummary {
 }
 
 export interface FileVersion {
-  storagePath: string;
   size: number;
   uploadedBy: FileUserSummary | null;
   uploadedAt: string;

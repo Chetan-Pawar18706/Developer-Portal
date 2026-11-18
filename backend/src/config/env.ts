@@ -10,6 +10,7 @@ const envSchema = z.object({
     .string()
     .min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
   CLIENT_URL: z.string().url('CLIENT_URL must be a valid URL'),
+  TRUST_PROXY: z.coerce.number().int().nonnegative().default(1),
   MAIL_PROVIDER: z.enum(['smtp', 'ethereal']).default('smtp'),
   SMTP_HOST: z.string().min(1).default('smtp.example.com'),
   SMTP_PORT: z.coerce.number().int().positive().default(587),

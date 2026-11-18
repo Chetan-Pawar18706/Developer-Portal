@@ -4,7 +4,9 @@ import { authenticate } from '../middleware/auth';
 import {
   forgotPasswordRateLimiter,
   loginRateLimiter,
+  refreshRateLimiter,
   registerRateLimiter,
+  resetPasswordRateLimiter,
 } from '../middleware/rateLimit';
 import { validate } from '../middleware/validate';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -32,9 +34,9 @@ authRouter.post(
   asyncHandler(authController.login),
 );
 
-authRouter.post('/refresh', asyncHandler(authController.refresh));
+authRouter.post('/refresh', refreshRateLimiter, asyncHandler(authController.refresh));
 
-authRouter.post('/logout', asyncHandler(authController.logout));
+authRouter.post('/logout', refreshRateLimiter, asyncHandler(authController.logout));
 
 authRouter.post(
   '/forgot-password',
@@ -45,6 +47,7 @@ authRouter.post(
 
 authRouter.post(
   '/reset-password',
+  resetPasswordRateLimiter,
   validate({ body: resetPasswordSchema }),
   asyncHandler(authController.resetPassword),
 );

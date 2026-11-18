@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { httpAttachmentUrlSchema } from './common.schemas';
 import {
   ISSUE_SEVERITIES,
   ISSUE_STATUSES,
@@ -10,7 +11,7 @@ const nullableObjectIdSchema = objectIdSchema.nullable().optional();
 
 const issueAttachmentSchema = z.object({
   name: z.string().trim().min(1).max(200),
-  url: z.string().trim().url().max(2000),
+  url: httpAttachmentUrlSchema,
   mimeType: z.string().trim().max(120).default(''),
   size: z.number().int().min(0).max(500_000_000).default(0),
 });

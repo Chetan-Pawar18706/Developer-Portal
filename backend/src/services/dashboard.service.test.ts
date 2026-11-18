@@ -1,4 +1,3 @@
-import { Types } from 'mongoose';
 import { Issue } from '../models/issue.model';
 import { Project } from '../models/project.model';
 import { Requirement } from '../models/requirement.model';
@@ -53,12 +52,13 @@ async function seedProject(): Promise<{
 
 describe('dashboard aggregation numbers', () => {
   it('matches task, issue, hours and approval totals', async () => {
-    const { project, developer } = await seedProject();
+    const { project, pm, developer } = await seedProject();
     const now = new Date();
 
     await Task.create([
       {
         project: project._id,
+        reporter: pm._id,
         title: 'Done task one',
         status: 'done',
         priority: 'medium',
@@ -68,6 +68,7 @@ describe('dashboard aggregation numbers', () => {
       },
       {
         project: project._id,
+        reporter: pm._id,
         title: 'Done task two',
         status: 'done',
         priority: 'low',
@@ -77,6 +78,7 @@ describe('dashboard aggregation numbers', () => {
       },
       {
         project: project._id,
+        reporter: pm._id,
         title: 'Overdue task',
         status: 'todo',
         priority: 'high',
@@ -85,6 +87,7 @@ describe('dashboard aggregation numbers', () => {
       },
       {
         project: project._id,
+        reporter: pm._id,
         title: 'In review task',
         status: 'in_review',
         priority: 'medium',
@@ -156,10 +159,11 @@ describe('dashboard aggregation numbers', () => {
   });
 
   it('returns PM workload and issue aging buckets', async () => {
-    const { project, developer } = await seedProject();
+    const { project, pm, developer } = await seedProject();
 
     await Task.create({
       project: project._id,
+      reporter: pm._id,
       title: 'Developer task',
       status: 'in_progress',
       priority: 'high',
@@ -196,6 +200,7 @@ describe('dashboard aggregation numbers', () => {
 
     await Task.create({
       project: project._id,
+      reporter: pm._id,
       title: 'Open developer task',
       status: 'todo',
       priority: 'medium',

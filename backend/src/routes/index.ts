@@ -12,6 +12,7 @@ import { requirementRouter } from './requirement.routes';
 import { searchQuerySchema } from './search.schemas';
 import { search } from '../controllers/search.controller';
 import { authenticate } from '../middleware/auth';
+import { searchRateLimiter } from '../middleware/rateLimit';
 import { validate } from '../middleware/validate';
 import { asyncHandler } from '../utils/asyncHandler';
 import { taskRouter } from './task.routes';
@@ -32,6 +33,7 @@ apiRouter.use('/requirements', requirementRouter);
 apiRouter.get(
   '/search',
   authenticate,
+  searchRateLimiter,
   validate({ query: searchQuerySchema }),
   asyncHandler(search),
 );

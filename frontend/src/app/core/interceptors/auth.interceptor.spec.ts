@@ -15,6 +15,7 @@ const testUser: User = {
   role: 'client',
   avatar: null,
   isActive: true,
+  theme: 'light',
   notificationPrefs: {
     emailOnAssignment: true,
     emailOnMention: true,

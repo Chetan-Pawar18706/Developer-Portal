@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { COMMENT_ENTITY_TYPES } from '../models/comment.model';
+import { httpAttachmentUrlSchema } from './common.schemas';
 
 const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid identifier');
 
@@ -7,7 +8,7 @@ export const commentEntityTypeSchema = z.enum(COMMENT_ENTITY_TYPES);
 
 const commentAttachmentSchema = z.object({
   name: z.string().trim().min(1).max(200),
-  url: z.string().trim().url().max(2000),
+  url: httpAttachmentUrlSchema,
   mimeType: z.string().trim().max(120).default(''),
   size: z.number().int().min(0).max(500_000_000).default(0),
 });

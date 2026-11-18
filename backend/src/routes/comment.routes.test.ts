@@ -147,11 +147,12 @@ describe('/api/comments visibility', () => {
       .get('/api/comments')
       .set('Authorization', auth(pm))
       .query(target());
+    const publicThread = (
+      staffThread.body.data.data as Array<{ id: string; replies: Array<{ text: string }> }>
+    ).find((comment) => comment.id === publicComment.body.data.comment.id);
 
-    expect(staffThread.body.data.data[0].replies).toHaveLength(1);
-    expect(staffThread.body.data.data[0].replies[0].text).toBe(
-      'Internal reply about the client',
-    );
+    expect(publicThread?.replies).toHaveLength(1);
+    expect(publicThread?.replies[0].text).toBe('Internal reply about the client');
   });
 
   it('blocks clients from internal notes and outsiders from every action', async () => {

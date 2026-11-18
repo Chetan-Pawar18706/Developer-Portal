@@ -23,6 +23,7 @@ import type {
   UpdateProjectInput,
   UpdateProjectStatusInput,
 } from '../routes/project.schemas';
+import { revokeProjectAccess } from '../sockets/socket.server';
 import { logActivity } from './activity.service';
 import { notifyProjectTeam } from './notification.service';
 
@@ -592,6 +593,7 @@ export async function removeProjectMember(
 
   const [removed] = project.members.splice(index, 1);
   await project.save();
+  revokeProjectAccess(userId, project._id.toString());
 
   await logActivity({
     projectId: project._id,

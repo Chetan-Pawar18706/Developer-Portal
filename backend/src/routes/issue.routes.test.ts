@@ -95,9 +95,11 @@ describe('/api/projects/:id/issues', () => {
       .set('Authorization', auth(pm));
 
     expect(activity.status).toBe(200);
-    expect(activity.body.data.some((entry: { action: string }) => entry.action === 'issue_created')).toBe(
-      true,
-    );
+    expect(
+      (activity.body.data.activities as Array<{ action: string }>).some(
+        (entry) => entry.action === 'issue_created',
+      ),
+    ).toBe(true);
   });
 
   it('blocks outsiders and stops clients from assigning issues', async () => {
