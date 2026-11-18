@@ -8,6 +8,7 @@ import {
   commentIdParamSchema,
   createCommentSchema,
   listCommentsQuerySchema,
+  listGlobalCommentsQuerySchema,
   toggleReactionSchema,
   updateCommentSchema,
 } from './comment.schemas';
@@ -15,6 +16,12 @@ import {
 export const commentRouter = Router();
 
 commentRouter.use(authenticate);
+
+commentRouter.get(
+  '/global',
+  validate({ query: listGlobalCommentsQuerySchema }),
+  asyncHandler(commentController.listGlobalComments),
+);
 
 commentRouter.get(
   '/',

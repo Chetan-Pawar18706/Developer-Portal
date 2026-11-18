@@ -7,6 +7,7 @@ import type {
   Comment,
   CommentEntityType,
   CommentListQuery,
+  GlobalCommentListQuery,
   CreateCommentRequest,
   ToggleReactionRequest,
   UpdateCommentRequest,
@@ -30,6 +31,28 @@ export class CommentService {
 
     return this.http
       .get<ApiResponse<PaginatedData<Comment>>>(this.baseUrl, { params })
+      .pipe(map((response) => response.data));
+  }
+
+  listGlobal(query: GlobalCommentListQuery): Observable<PaginatedData<Comment>> {
+    let params = new HttpParams()
+      .set('page', query.page)
+      .set('limit', query.limit);
+
+    if (query.projectId) {
+      params = params.set('projectId', query.projectId);
+    }
+
+    if (query.entityType) {
+      params = params.set('entityType', query.entityType);
+    }
+
+    if (query.search) {
+      params = params.set('search', query.search);
+    }
+
+    return this.http
+      .get<ApiResponse<PaginatedData<Comment>>>(`${this.baseUrl}/global`, { params })
       .pipe(map((response) => response.data));
   }
 

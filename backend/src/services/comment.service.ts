@@ -7,17 +7,19 @@ import {
   type CommentAttachmentAttributes,
   type CommentDocument,
 } from '../models/comment.model';
-import type { ProjectDocument } from '../models/project.model';
+import { Project, type ProjectDocument } from '../models/project.model';
 import { User, type UserRole } from '../models/user.model';
 import type {
   CreateCommentInput,
   ListCommentsQuery,
+  ListGlobalCommentsQuery,
   ToggleReactionInput,
   UpdateCommentInput,
 } from '../routes/comment.schemas';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
 import { resolveFileLinks, type PublicFileLink } from './file.service';
+import { buildProjectVisibilityFilter } from './project.service';
 import { notify } from './notification.service';
 
 const COMMENT_POPULATE = [
@@ -28,6 +30,11 @@ const COMMENT_POPULATE = [
     path: 'fileIds',
     select: 'originalName mimeType size version isInternal',
   },
+];
+
+const GLOBAL_COMMENT_POPULATE = [
+  ...COMMENT_POPULATE,
+  { path: 'project', select: 'title' },
 ];
 
 const MENTION_TOKEN_PATTERN = /@\[[^\]]+\]\(([a-f\d]{24})\)/gi;
@@ -60,6 +67,7 @@ export interface PublicCommentAttachment {
 export interface PublicComment {
   id: string;
   projectId: string;
+  projectTitle: string | null;
   entityType: 'project' | 'requirement' | 'task' | 'issue';
   entityId: string;
   author: CommentUserSummary;
@@ -91,9 +99,14 @@ interface PopulatedUserShape {
   avatar: string | null;
 }
 
+interface PopulatedProjectShape {
+  _id: Types.ObjectId;
+  title: string;
+}
+
 interface PopulatedCommentShape {
   id: string;
-  project: Types.ObjectId;
+  project: Types.ObjectId | PopulatedProjectShape;
   entityType: PublicComment['entityType'];
   entityId: Types.ObjectId;
   author: PopulatedUserShape;
@@ -126,12 +139,20 @@ function toUserSummary(user: PopulatedUserShape): CommentUserSummary {
   };
 }
 
+function isPopulatedProject(
+  project: Types.ObjectId | PopulatedProjectShape,
+): project is PopulatedProjectShape {
+  return !(project instanceof Types.ObjectId);
+}
+
 function toPublicComment(comment: CommentDocument, actorIsClient: boolean): PublicComment {
   const populated = comment as unknown as PopulatedCommentShape;
+  const project = populated.project;
 
   return {
     id: populated.id,
-    projectId: populated.project.toString(),
+    projectId: isPopulatedProject(project) ? project._id.toString() : project.toString(),
+    projectTitle: isPopulatedProject(project) ? project.title : null,
     entityType: populated.entityType,
     entityId: populated.entityId.toString(),
     author: toUserSummary(populated.author),
@@ -177,6 +198,10 @@ function visibilityFilter(actor: CommentActor): QueryFilter<CommentAttributes> {
   }
 
   return {};
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function sanitizeCommentText(value: string): string {
@@ -272,6 +297,55 @@ function attachmentValues(
     mimeType: attachment.mimeType,
     size: attachment.size,
   }));
+}
+
+export async function listGlobalComments(
+  actor: CommentActor,
+  query: ListGlobalCommentsQuery,
+): Promise<CommentListResult> {
+  const visibleProjects = await Project.find(buildProjectVisibilityFilter(actor)).select('_id');
+  const projectIds = visibleProjects.map((project) => project._id);
+  const filter: QueryFilter<CommentAttributes> = {
+    project: { $in: projectIds },
+    ...visibilityFilter(actor),
+  };
+
+  if (query.projectId) {
+    const requestedId = new Types.ObjectId(query.projectId);
+    filter.project = projectIds.some((id) => id.equals(requestedId)) ? requestedId : { $in: [] };
+  }
+
+  if (query.entityType) {
+    filter.entityType = query.entityType;
+  }
+
+  if (query.authorId) {
+    filter.author = new Types.ObjectId(query.authorId);
+  }
+
+  if (query.search) {
+    filter.text = { $regex: escapeRegExp(query.search), $options: 'i' };
+  }
+
+  const skip = (query.page - 1) * query.limit;
+  const [comments, total] = await Promise.all([
+    Comment.find(filter)
+      .populate(GLOBAL_COMMENT_POPULATE)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(query.limit),
+    Comment.countDocuments(filter),
+  ]);
+
+  return {
+    data: comments.map((comment) => ({
+      ...toPublicComment(comment, actor.role === 'client'),
+      replies: [],
+    })),
+    total,
+    page: query.page,
+    limit: query.limit,
+  };
 }
 
 export async function listComments(

@@ -1,0 +1,143 @@
+.messages-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.4rem, 2.6vw, 1.8rem);
+  }
+
+  .subtitle {
+    max-width: 48rem;
+    margin: 0.35rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+    line-height: 1.5;
+  }
+}
+
+.eyebrow {
+  margin: 0 0 0.15rem;
+  color: var(--mat-sys-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+
+  mat-form-field {
+    flex: 0 1 14rem;
+  }
+
+  .search-field {
+    flex: 1 1 18rem;
+    max-width: 28rem;
+  }
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--status-blocked-border);
+  border-radius: 0.7rem;
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked);
+
+  span {
+    flex: 1;
+  }
+}
+
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.message-card {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+}
+
+.message-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+
+  span {
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.internal-chip {
+  display: inline-flex;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--status-review-border);
+  border-radius: 999px;
+  background: var(--status-review-bg);
+  color: var(--status-review);
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.message-text {
+  margin: 0.5rem 0 0.65rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.message-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.78rem;
+
+  a,
+  .attachment-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--mat-sys-primary);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  mat-icon {
+    width: 0.95rem;
+    height: 0.95rem;
+    font-size: 0.95rem;
+  }
+}
+
+mat-paginator {
+  border-radius: 0.9rem;
+  background: transparent;
+}

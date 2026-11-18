@@ -26,6 +26,7 @@ export interface CommentAttachment {
 export interface Comment {
   id: string;
   projectId: string;
+  projectTitle?: string | null;
   entityType: CommentEntityType;
   entityId: string;
   author: CommentUserSummary;
@@ -45,6 +46,12 @@ export interface Comment {
 export interface CommentListQuery {
   page: number;
   limit: number;
+}
+
+export interface GlobalCommentListQuery extends CommentListQuery {
+  projectId?: string;
+  entityType?: CommentEntityType;
+  search?: string;
 }
 
 export interface CreateCommentRequest {

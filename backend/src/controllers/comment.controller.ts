@@ -4,6 +4,7 @@ import type { ProjectDocument } from '../models/project.model';
 import type {
   CreateCommentInput,
   ListCommentsQuery,
+  ListGlobalCommentsQuery,
   ToggleReactionInput,
   UpdateCommentInput,
 } from '../routes/comment.schemas';
@@ -25,6 +26,15 @@ function requireProject(req: Request): ProjectDocument {
   }
 
   return req.project;
+}
+
+export async function listGlobalComments(req: Request, res: Response): Promise<void> {
+  const result = await commentService.listGlobalComments(
+    requireActor(req),
+    req.query as unknown as ListGlobalCommentsQuery,
+  );
+
+  sendPaginated(res, result.data, result.total, result.page, result.limit, 'Comments retrieved');
 }
 
 export async function listComments(req: Request, res: Response): Promise<void> {

@@ -197,11 +197,11 @@ export const routes: Routes = [
                 data: {
                   title: 'Reports',
                   icon: 'insights',
-                  description: 'Delivery reports and client summaries will be added later.',
+                  description: 'Delivery reports and client summaries.',
                 },
                 loadComponent: () =>
-                  import('./shared/components/placeholder-page/placeholder-page.component').then(
-                    (module) => module.PlaceholderPageComponent,
+                  import('./features/reports/reports.component').then(
+                    (module) => module.ReportsComponent,
                   ),
               },
             ],
@@ -287,8 +287,8 @@ export const routes: Routes = [
           description: 'Project discussions and comment threads in one place.',
         },
         loadComponent: () =>
-          import('./shared/components/placeholder-page/placeholder-page.component').then(
-            (module) => module.PlaceholderPageComponent,
+          import('./features/communication/global-messages.component').then(
+            (module) => module.GlobalMessagesComponent,
           ),
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },

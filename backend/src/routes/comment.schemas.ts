@@ -42,7 +42,17 @@ export const toggleReactionSchema = z.object({
   emoji: z.string().trim().min(1).max(16),
 });
 
+export const listGlobalCommentsQuerySchema = z.object({
+  projectId: objectIdSchema.optional(),
+  entityType: commentEntityTypeSchema.optional(),
+  authorId: objectIdSchema.optional(),
+  search: z.string().trim().max(200).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
 export type ListCommentsQuery = z.infer<typeof listCommentsQuerySchema>;
+export type ListGlobalCommentsQuery = z.infer<typeof listGlobalCommentsQuerySchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
 export type ToggleReactionInput = z.infer<typeof toggleReactionSchema>;

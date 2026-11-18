@@ -1,0 +1,172 @@
+<section class="reports-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Delivery</p>
+      <h1>Reports</h1>
+      <p class="subtitle">Progress, workload and delivery health for the projects you can access.</p>
+    </div>
+    @if (report(); as data) {
+      <span class="generated">Generated {{ data.generatedAt | date: 'medium' }}</span>
+    }
+  </header>
+
+  @if (error(); as message) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ message }}</span>
+      <button mat-button type="button" (click)="load()">Retry</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading" role="status">
+      <mat-spinner diameter="36" />
+      <span>Generating report…</span>
+    </div>
+  } @else if (report(); as data) {
+    <div class="stat-grid">
+      <mat-card appearance="outlined" class="stat-card">
+        <span class="stat-icon"><mat-icon>folder_open</mat-icon></span>
+        <div>
+          <span class="stat-value">{{ data.totals.projects }}</span>
+          <span class="stat-label">Projects</span>
+        </div>
+      </mat-card>
+      <mat-card appearance="outlined" class="stat-card">
+        <span class="stat-icon"><mat-icon>checklist</mat-icon></span>
+        <div>
+          <span class="stat-value">{{ data.totals.completion }}%</span>
+          <span class="stat-label">Task completion</span>
+        </div>
+      </mat-card>
+      <mat-card appearance="outlined" class="stat-card">
+        <span class="stat-icon"><mat-icon>assignment_turned_in</mat-icon></span>
+        <div>
+          <span class="stat-value">{{ data.totals.tasks }}</span>
+          <span class="stat-label">Total tasks</span>
+        </div>
+      </mat-card>
+      <mat-card appearance="outlined" class="stat-card">
+        <span class="stat-icon"><mat-icon>bug_report</mat-icon></span>
+        <div>
+          <span class="stat-value">{{ data.totals.openIssues }}</span>
+          <span class="stat-label">Open issues</span>
+        </div>
+      </mat-card>
+      <mat-card appearance="outlined" class="stat-card">
+        <span class="stat-icon"><mat-icon>schedule</mat-icon></span>
+        <div>
+          <span class="stat-value">{{ data.totals.overdueTasks }}</span>
+          <span class="stat-label">Overdue tasks</span>
+        </div>
+      </mat-card>
+      <mat-card appearance="outlined" class="stat-card">
+        <span class="stat-icon"><mat-icon>access_time</mat-icon></span>
+        <div>
+          <span class="stat-value">{{ data.totals.hoursLogged }}</span>
+          <span class="stat-label">Hours logged</span>
+        </div>
+      </mat-card>
+    </div>
+
+    <div class="status-grid">
+      <mat-card appearance="outlined" class="status-card">
+        <h2>Task status</h2>
+        @for (item of data.taskStatuses; track item.status) {
+          <div class="status-row">
+            <div class="status-label">
+              <span>{{ label(item.status) }}</span>
+              <strong>{{ item.count }}</strong>
+            </div>
+            <div class="status-track">
+              <span class="status-fill {{ tone(item.status) }}" [style.width.%]="barWidth(item.count, data.taskStatuses)"></span>
+            </div>
+          </div>
+        }
+      </mat-card>
+
+      <mat-card appearance="outlined" class="status-card">
+        <h2>Requirement status</h2>
+        @for (item of data.requirementStatuses; track item.status) {
+          <div class="status-row">
+            <div class="status-label">
+              <span>{{ label(item.status) }}</span>
+              <strong>{{ item.count }}</strong>
+            </div>
+            <div class="status-track">
+              <span class="status-fill {{ tone(item.status) }}" [style.width.%]="barWidth(item.count, data.requirementStatuses)"></span>
+            </div>
+          </div>
+        }
+      </mat-card>
+
+      <mat-card appearance="outlined" class="status-card">
+        <h2>Issue status</h2>
+        @for (item of data.issueStatuses; track item.status) {
+          <div class="status-row">
+            <div class="status-label">
+              <span>{{ label(item.status) }}</span>
+              <strong>{{ item.count }}</strong>
+            </div>
+            <div class="status-track">
+              <span class="status-fill {{ tone(item.status) }}" [style.width.%]="barWidth(item.count, data.issueStatuses)"></span>
+            </div>
+          </div>
+        }
+      </mat-card>
+    </div>
+
+    <mat-card appearance="outlined" class="project-card">
+      <h2>Project breakdown</h2>
+      @if (data.projects.length === 0) {
+        <app-empty-state
+          icon="insights"
+          title="No projects available"
+          message="Create a project to start tracking delivery progress."
+        />
+      } @else {
+        <div class="project-scroll">
+          <table class="project-table">
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Status</th>
+                <th>Health</th>
+                <th>Requirements</th>
+                <th>Tasks</th>
+                <th>Open issues</th>
+                <th>Overdue</th>
+                <th>Hours</th>
+                <th>Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (project of data.projects; track project.id) {
+                <tr>
+                  <td>
+                    <a [routerLink]="['/projects', project.id, 'reports']">{{ project.title }}</a>
+                  </td>
+                  <td><span class="chip" [class]="tone(project.status)">{{ label(project.status) }}</span></td>
+                  <td><span class="chip" [class]="tone(project.health)">{{ label(project.health) }}</span></td>
+                  <td>{{ project.totalRequirements }}</td>
+                  <td>{{ project.doneTasks }}/{{ project.totalTasks }}</td>
+                  <td>{{ project.openIssues }}</td>
+                  <td>{{ project.overdueTasks }}</td>
+                  <td>{{ project.hoursLogged }}</td>
+                  <td>
+                    <div class="progress-cell">
+                      <span>{{ project.progress }}%</span>
+                      <div class="status-track">
+                        <span class="status-fill success" [style.width.%]="project.progress"></span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </mat-card>
+  }
+</section>
