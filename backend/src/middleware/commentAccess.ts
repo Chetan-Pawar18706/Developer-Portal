@@ -1,6 +1,7 @@
 import type { Request, RequestHandler } from 'express';
 import { Types } from 'mongoose';
 import { Comment, type CommentEntityType } from '../models/comment.model';
+import { Issue } from '../models/issue.model';
 import {
   Project,
   type ProjectDocument,
@@ -12,10 +13,7 @@ import { canAccessProject } from '../services/project.service';
 import { ApiError } from '../utils/ApiError';
 import { asyncHandler } from '../utils/asyncHandler';
 
-/**
- * Resolves the owning project for a comment target. Issues are part of the
- * comment model's contract but their feature ships in a later part.
- */
+/** Resolves the owning project for a comment target. */
 export async function findProjectForCommentEntity(
   entityType: CommentEntityType,
   entityId: string,
@@ -42,7 +40,13 @@ export async function findProjectForCommentEntity(
 
     projectId = task.project;
   } else {
-    throw new ApiError(404, 'Issue comments are not available yet');
+    const issue = await Issue.findById(id).select('project');
+
+    if (!issue) {
+      throw new ApiError(404, 'Issue not found');
+    }
+
+    projectId = issue.project;
   }
 
   const project = await Project.findById(projectId);

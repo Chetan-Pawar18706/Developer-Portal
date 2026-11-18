@@ -22,6 +22,11 @@ export const ACTIVITY_ACTIONS = [
   'comment_updated',
   'comment_deleted',
   'comment_reacted',
+  'issue_created',
+  'issue_updated',
+  'issue_status_changed',
+  'issue_assigned',
+  'issue_converted_to_task',
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
@@ -33,6 +38,7 @@ export const ACTIVITY_ENTITY_TYPES = [
   'requirement',
   'task',
   'comment',
+  'issue',
 ] as const;
 export type ActivityEntityType = (typeof ACTIVITY_ENTITY_TYPES)[number];
 

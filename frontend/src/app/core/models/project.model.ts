@@ -106,8 +106,13 @@ export interface ProjectActivity {
     | 'comment_created'
     | 'comment_updated'
     | 'comment_deleted'
-    | 'comment_reacted';
-  entityType: 'project' | 'member' | 'status' | 'requirement' | 'task' | 'comment';
+    | 'comment_reacted'
+    | 'issue_created'
+    | 'issue_updated'
+    | 'issue_status_changed'
+    | 'issue_assigned'
+    | 'issue_converted_to_task';
+  entityType: 'project' | 'member' | 'status' | 'requirement' | 'task' | 'comment' | 'issue';
   entityId: string | null;
   meta: Record<string, unknown>;
   actor: ProjectUserSummary | null;

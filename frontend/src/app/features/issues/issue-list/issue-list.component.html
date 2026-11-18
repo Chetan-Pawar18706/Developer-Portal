@@ -1,0 +1,197 @@
+<section class="issues-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Delivery blockers</p>
+      <h1>Issues</h1>
+      <p class="subtitle">
+        Raise bugs, questions and change requests, then follow them through to resolution.
+      </p>
+    </div>
+
+    @if (canCreate()) {
+      <button mat-flat-button type="button" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        Raise issue
+      </button>
+    }
+  </header>
+
+  @if (store.error(); as error) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error }}</span>
+      <button mat-button type="button" (click)="store.reload()">Retry</button>
+    </div>
+  }
+
+  <mat-card appearance="outlined" class="filters-card">
+    <mat-card-content class="filters">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+        <mat-label>Search issues</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [formControl]="searchControl" placeholder="Title or description" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Type</mat-label>
+        <mat-select [value]="store.filters().type" (selectionChange)="onTypeChange($event.value)">
+          <mat-option value="">All types</mat-option>
+          @for (type of types; track type) {
+            <mat-option [value]="type">{{ typeLabel(type) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Severity</mat-label>
+        <mat-select
+          [value]="store.filters().severity"
+          (selectionChange)="onSeverityChange($event.value)"
+        >
+          <mat-option value="">All severities</mat-option>
+          @for (severity of severities; track severity) {
+            <mat-option [value]="severity">{{ severityLabel(severity) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="store.filters().status" (selectionChange)="onStatusChange($event.value)">
+          <mat-option value="">All statuses</mat-option>
+          @for (status of statuses; track status) {
+            <mat-option [value]="status">{{ statusLabel(status) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Assignee</mat-label>
+        <mat-select
+          [value]="store.filters().assignedTo"
+          (selectionChange)="onAssigneeChange($event.value)"
+        >
+          <mat-option value="">Anyone</mat-option>
+          @for (member of assigneeOptions(); track member.user.id) {
+            <mat-option [value]="member.user.id">{{ member.user.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <span class="result-count">
+        {{ store.total() }} {{ store.total() === 1 ? 'issue' : 'issues' }}
+      </span>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="results">
+    @if (store.loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    @if (store.loading() && store.entities().length === 0) {
+      <app-loading-skeleton [rows]="6" />
+    } @else if (store.entities().length === 0) {
+      <mat-card appearance="outlined">
+        <app-empty-state
+          icon="bug_report"
+          title="No issues found"
+          message="Raise the first issue or clear the filters to see every reported item."
+        >
+          <button mat-stroked-button type="button" (click)="openCreateDialog()">
+            Raise an issue
+          </button>
+        </app-empty-state>
+      </mat-card>
+    } @else {
+      <mat-card appearance="outlined" class="table-card">
+        <div class="table-scroll">
+          <table mat-table [dataSource]="store.entities()" class="issues-table">
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>Issue</th>
+              <td mat-cell *matCellDef="let issue">
+                <div class="issue-title">
+                  <strong>{{ issue.title }}</strong>
+                  @if (issue.linkedTask) {
+                    <span
+                      class="linked-chip"
+                      matTooltip="Converted to task: {{ issue.linkedTask.title }}"
+                    >
+                      <mat-icon>task_alt</mat-icon>
+                      Task linked
+                    </span>
+                  }
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="type">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let issue">{{ typeLabel(issue.type) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="severity">
+              <th mat-header-cell *matHeaderCellDef>Severity</th>
+              <td mat-cell *matCellDef="let issue">
+                <span class="severity-chip" [class]="'severity-' + issue.severity">
+                  {{ severityLabel(issue.severity) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let issue">
+                <app-status-badge
+                  [status]="issue.status"
+                  [label]="statusLabel(issue.status)"
+                />
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="assignee">
+              <th mat-header-cell *matHeaderCellDef>Assignee</th>
+              <td mat-cell *matCellDef="let issue">
+                {{ issue.assignedTo?.name ?? 'Unassigned' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="age">
+              <th mat-header-cell *matHeaderCellDef>Age</th>
+              <td mat-cell *matCellDef="let issue">
+                <span class="age-chip" [class]="'age-' + ageTone(issue)">
+                  {{ daysOpen(issue) }} {{ daysOpen(issue) === 1 ? 'day' : 'days' }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="updatedAt">
+              <th mat-header-cell *matHeaderCellDef>Updated</th>
+              <td mat-cell *matCellDef="let issue">
+                {{ issue.updatedAt | date: 'MMM d, y' }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayColumns"></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: displayColumns"
+              tabindex="0"
+              (click)="openIssue(row)"
+              (keydown.enter)="openIssue(row)"
+            ></tr>
+          </table>
+        </div>
+
+        <mat-paginator
+          [length]="store.total()"
+          [pageIndex]="store.filters().page - 1"
+          [pageSize]="store.filters().limit"
+          [pageSizeOptions]="[10, 20, 50]"
+          [showFirstLastButtons]="true"
+          (page)="onPage($event)"
+        />
+      </mat-card>
+    }
+  </div>
+</section>

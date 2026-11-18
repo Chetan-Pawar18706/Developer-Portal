@@ -1,0 +1,220 @@
+<section class="issue-detail-page">
+  <a class="back-link" [routerLink]="['/projects', projectId(), 'issues']">
+    <mat-icon>arrow_back</mat-icon>
+    Back to issues
+  </a>
+
+  @if (store.selectedLoading() && !store.selected()) {
+    <app-loading-skeleton [rows]="6" />
+  } @else if (store.error() && !store.selected()) {
+    <mat-card appearance="outlined" class="error-card">
+      <app-empty-state
+        icon="error_outline"
+        title="Unable to load issue"
+        [message]="store.error() ?? ''"
+      >
+        <button mat-stroked-button type="button" (click)="store.loadOne(issueId())">
+          Try again
+        </button>
+      </app-empty-state>
+    </mat-card>
+  } @else if (store.selected(); as issue) {
+    @if (actionError(); as error) {
+      <div class="error-banner" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+    }
+
+    <header class="issue-header">
+      <div class="header-main">
+        <div class="badge-row">
+          <app-status-badge [status]="issue.status" [label]="statusLabels[issue.status]" />
+          <span class="severity-chip" [class]="'severity-' + issue.severity">
+            {{ severityLabel(issue.severity) }}
+          </span>
+          <span class="type-chip">{{ typeLabels[issue.type] }}</span>
+          @if (issue.linkedTask) {
+            <span class="linked-chip">
+              <mat-icon>link</mat-icon>
+              Linked to a task
+            </span>
+          }
+        </div>
+
+        <h1>{{ issue.title }}</h1>
+        <p class="issue-meta">
+          Raised by {{ issue.raisedBy.name }} on {{ issue.createdAt | date: 'MMM d, y' }}
+        </p>
+      </div>
+
+      <span class="age-chip" [class]="'age-' + ageTone()">
+        <mat-icon>schedule</mat-icon>
+        {{ ageLabel() }}
+      </span>
+    </header>
+
+    <div class="issue-layout">
+      <div class="issue-main">
+        <mat-card appearance="outlined" class="detail-card">
+          <mat-card-header>
+            <mat-card-title>Description</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <p class="description-text">{{ issue.description }}</p>
+          </mat-card-content>
+        </mat-card>
+
+        @if (issue.stepsToReproduce) {
+          <mat-card appearance="outlined" class="detail-card">
+            <mat-card-header>
+              <mat-card-title>Steps to reproduce</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <pre class="steps-text">{{ issue.stepsToReproduce }}</pre>
+            </mat-card-content>
+          </mat-card>
+        }
+
+        @if (issue.attachments.length > 0) {
+          <mat-card appearance="outlined" class="detail-card">
+            <mat-card-header>
+              <mat-card-title>Attachments</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <ul class="attachments">
+                @for (attachment of issue.attachments; track attachment.url) {
+                  <li>
+                    <mat-icon>attach_file</mat-icon>
+                    <a [href]="attachment.url" target="_blank" rel="noopener noreferrer">
+                      {{ attachment.name }}
+                    </a>
+                  </li>
+                }
+              </ul>
+            </mat-card-content>
+          </mat-card>
+        }
+
+        <mat-card appearance="outlined" class="detail-card comments-card">
+          <mat-card-header>
+            <mat-card-title>Discussion</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <app-comment-thread
+              entityType="issue"
+              [entityId]="issue.id"
+              [projectId]="projectId()"
+              [members]="projectStore.selected()?.members ?? []"
+            />
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <aside class="issue-side">
+        <mat-card appearance="outlined" class="workflow-card">
+          <mat-card-header>
+            <mat-card-title>Workflow</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (store.loading()) {
+              <mat-progress-bar mode="indeterminate" />
+            }
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Status</mat-label>
+              <mat-select
+                [formControl]="statusControl"
+                [disabled]="acting() || statusOptions().length === 0"
+              >
+                @for (status of statusOptions(); track status) {
+                  <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+                }
+              </mat-select>
+              @if (auth.role() === 'client' && !isClientOwner()) {
+                <mat-hint>Only the issue owner can close or reopen it.</mat-hint>
+              }
+            </mat-form-field>
+
+            @if (canManage()) {
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Assignee</mat-label>
+                <mat-select [formControl]="assigneeControl" [disabled]="acting()">
+                  <mat-option value="">Unassigned</mat-option>
+                  @for (member of assigneeOptions(); track member.user.id) {
+                    <mat-option [value]="member.user.id">{{ member.user.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <div class="assignee-summary">
+                <span class="field-label">Assignee</span>
+                <div class="assignee-person">
+                  @if (issue.assignedTo) {
+                    <app-user-avatar
+                      [name]="issue.assignedTo.name"
+                      [avatar]="issue.assignedTo.avatar"
+                      size="sm"
+                    />
+                    <span>{{ issue.assignedTo.name }}</span>
+                  } @else {
+                    <span>Unassigned</span>
+                  }
+                </div>
+              </div>
+            }
+
+            <mat-divider />
+
+            @if (issue.linkedTask) {
+              <button
+                mat-stroked-button
+                type="button"
+                class="full-width-button"
+                (click)="openLinkedTask(issue)"
+              >
+                <mat-icon>task_alt</mat-icon>
+                Open linked task
+              </button>
+            } @else if (canConvert()) {
+              <button
+                mat-flat-button
+                type="button"
+                class="full-width-button"
+                [disabled]="acting()"
+                (click)="convertToTask()"
+              >
+                @if (acting()) {
+                  <mat-spinner diameter="18" />
+                } @else {
+                  <mat-icon>task_alt</mat-icon>
+                }
+                Convert to task
+              </button>
+            }
+
+            @if (acting() && !issue.linkedTask) {
+              <p class="working-note">Creating the linked task…</p>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined" class="people-card">
+          <mat-card-header>
+            <mat-card-title>Raised by</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="assignee-person">
+              <app-user-avatar
+                [name]="issue.raisedBy.name"
+                [avatar]="issue.raisedBy.avatar"
+                size="sm"
+              />
+              <span>{{ issue.raisedBy.name }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </aside>
+    </div>
+  }
+</section>

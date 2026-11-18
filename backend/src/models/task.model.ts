@@ -56,6 +56,7 @@ export interface TaskAttributes {
   subtasks: TaskSubtaskAttributes[];
   timeLogs: TaskTimeLogAttributes[];
   clientReview: TaskClientReviewAttributes;
+  linkedIssue: Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -219,6 +220,11 @@ const taskSchema = new Schema<TaskAttributes, TaskModel>(
         by: null,
         at: null,
       }),
+    },
+    linkedIssue: {
+      type: Schema.Types.ObjectId,
+      ref: 'Issue',
+      default: null,
     },
   },
   { timestamps: true },

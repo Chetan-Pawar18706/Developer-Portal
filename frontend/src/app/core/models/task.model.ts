@@ -1,3 +1,4 @@
+import type { IssueStatus, IssueType } from './issue.model';
 import type { ProjectUserSummary } from './project.model';
 import type { RequirementStatus } from './requirement.model';
 
@@ -68,11 +69,19 @@ export interface TaskRequirementLink {
   status: RequirementStatus;
 }
 
+export interface TaskIssueLink {
+  id: string;
+  title: string;
+  status: IssueStatus;
+  type: IssueType;
+}
+
 export interface Task {
   id: string;
   projectId: string;
   projectTitle: string;
   requirement: TaskRequirementLink | null;
+  linkedIssue: TaskIssueLink | null;
   title: string;
   description: string;
   assignee: ProjectUserSummary | null;

@@ -1,5 +1,6 @@
 import type { ClientSession, QueryFilter } from 'mongoose';
 import { Types } from 'mongoose';
+import type { IssueStatus, IssueType } from '../models/issue.model';
 import {
   Project,
   type ProjectDocument,
@@ -40,6 +41,7 @@ const TASK_POPULATE = [
   { path: 'reporter', select: 'name email role avatar' },
   { path: 'timeLogs.user', select: 'name email role avatar' },
   { path: 'clientReview.by', select: 'name email role avatar' },
+  { path: 'linkedIssue', select: 'title status type' },
 ];
 
 export interface TaskActor {
@@ -80,11 +82,19 @@ export interface PublicTaskRequirement {
   status: RequirementStatus;
 }
 
+export interface PublicTaskIssue {
+  id: string;
+  title: string;
+  status: IssueStatus;
+  type: IssueType;
+}
+
 export interface PublicTask {
   id: string;
   projectId: string;
   projectTitle: string;
   requirement: PublicTaskRequirement | null;
+  linkedIssue: PublicTaskIssue | null;
   title: string;
   description: string;
   assignee: TaskUserSummary | null;
@@ -141,10 +151,18 @@ interface PopulatedRequirementShape {
   status: RequirementStatus;
 }
 
+interface PopulatedIssueShape {
+  _id: Types.ObjectId;
+  title: string;
+  status: IssueStatus;
+  type: IssueType;
+}
+
 interface PopulatedTaskShape {
   id: string;
   project: Types.ObjectId | PopulatedProjectShape;
   requirement: Types.ObjectId | PopulatedRequirementShape | null;
+  linkedIssue?: Types.ObjectId | PopulatedIssueShape | null;
   title: string;
   description: string;
   assignee: PopulatedUserShape | null;
@@ -205,12 +223,23 @@ function toPublicTask(task: TaskDocument): PublicTask {
           status: requirement.status,
         }
       : null;
+  const linkedIssue = populated.linkedIssue;
+  const issueLink =
+    linkedIssue && !(linkedIssue instanceof Types.ObjectId)
+      ? {
+          id: linkedIssue._id.toString(),
+          title: linkedIssue.title,
+          status: linkedIssue.status,
+          type: linkedIssue.type,
+        }
+      : null;
 
   return {
     id: populated.id,
     projectId,
     projectTitle,
     requirement: requirementLink,
+    linkedIssue: issueLink,
     title: populated.title,
     description: populated.description,
     assignee: toUserSummary(populated.assignee),
@@ -670,6 +699,68 @@ export async function createTask(
       taskId: task.id,
       title: task.title,
       status: task.status,
+    },
+  });
+
+  return getTask(task.id);
+}
+
+export interface CreateTaskFromIssueInput {
+  issueId: string;
+  title: string;
+  description: string;
+  type: IssueType;
+  priority: TaskPriority;
+  assigneeId: string | null;
+}
+
+/** Creates the delivery task produced when a stakeholder converts an issue. */
+export async function createTaskFromIssue(
+  project: ProjectDocument,
+  actor: TaskActor,
+  input: CreateTaskFromIssueInput,
+): Promise<PublicTask> {
+  assertCanCreateTask(actor);
+
+  if (input.assigneeId) {
+    await requireActiveProjectMember(project, input.assigneeId);
+  }
+
+  const order = await nextOrder(project._id, 'todo');
+  const task = await Task.create({
+    project: project._id,
+    requirement: null,
+    linkedIssue: new Types.ObjectId(input.issueId),
+    title: input.title,
+    description: input.description,
+    assignee: input.assigneeId ? new Types.ObjectId(input.assigneeId) : null,
+    reporter: new Types.ObjectId(actor.id),
+    status: 'todo',
+    priority: input.priority,
+    estimateHours: 0,
+    dueDate: null,
+    labels: normalizeLabels(['issue', input.type]),
+    order,
+    subtasks: [],
+    timeLogs: [],
+    clientReview: {
+      status: 'pending',
+      note: '',
+      by: null,
+      at: null,
+    },
+  });
+
+  await logActivity({
+    projectId: project._id,
+    actorId: actor.id,
+    action: 'task_created',
+    entityType: 'task',
+    entityId: task._id,
+    meta: {
+      taskId: task.id,
+      issueId: input.issueId,
+      title: task.title,
     },
   });
 

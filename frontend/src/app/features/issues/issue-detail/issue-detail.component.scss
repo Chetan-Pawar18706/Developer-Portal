@@ -1,0 +1,260 @@
+.issue-detail-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  align-self: flex-start;
+  color: var(--mat-sys-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  mat-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+    font-size: 1.1rem;
+  }
+}
+
+.error-card,
+.detail-card,
+.workflow-card,
+.people-card {
+  border-radius: 0.9rem;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--status-blocked-border);
+  border-radius: 0.7rem;
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked);
+}
+
+.issue-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+
+  h1 {
+    margin: 0.6rem 0 0.25rem;
+    font-size: clamp(1.35rem, 2.6vw, 1.8rem);
+  }
+}
+
+.header-main {
+  flex: 1 1 24rem;
+}
+
+.issue-meta {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.85rem;
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.severity-chip,
+.type-chip,
+.linked-chip,
+.age-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--status-draft-border);
+  border-radius: 999px;
+  background: var(--status-draft-bg);
+  color: var(--status-draft);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.type-chip,
+.linked-chip {
+  border-color: var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-low);
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    width: 0.9rem;
+    height: 0.9rem;
+    font-size: 0.9rem;
+  }
+}
+
+.severity-medium {
+  border-color: var(--status-review-border);
+  background: var(--status-review-bg);
+  color: var(--status-review);
+}
+
+.severity-high,
+.severity-critical {
+  border-color: var(--status-blocked-border);
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked);
+}
+
+.severity-critical,
+.age-critical {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.age-chip mat-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  font-size: 0.9rem;
+}
+
+.age-fresh,
+.age-closed {
+  border-color: var(--status-done-border);
+  background: var(--status-done-bg);
+  color: var(--status-done);
+}
+
+.age-aging {
+  border-color: var(--status-review-border);
+  background: var(--status-review-bg);
+  color: var(--status-review);
+}
+
+.age-stale,
+.age-critical {
+  border-color: var(--status-blocked-border);
+  background: var(--status-blocked-bg);
+  color: var(--status-blocked);
+}
+
+.issue-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.issue-main,
+.issue-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.detail-card mat-card-header,
+.workflow-card mat-card-header,
+.people-card mat-card-header {
+  padding-bottom: 0.5rem;
+}
+
+.description-text {
+  margin: 0;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.steps-text {
+  margin: 0;
+  padding: 0.85rem;
+  border-radius: 0.6rem;
+  background: var(--mat-sys-surface-container-low);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.attachments {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0;
+
+    mat-icon {
+      color: var(--mat-sys-primary);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+.comments-card mat-card-content {
+  padding-top: 0;
+}
+
+.workflow-card mat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.full-width-button {
+  width: 100%;
+
+  mat-spinner {
+    display: inline-block;
+    margin-right: 0.4rem;
+  }
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.assignee-person {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.working-note {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 60rem) {
+  .issue-layout {
+    grid-template-columns: 1fr;
+  }
+}

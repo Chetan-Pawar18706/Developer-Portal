@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import * as issueController from '../controllers/issue.controller';
 import * as projectController from '../controllers/project.controller';
 import * as requirementController from '../controllers/requirement.controller';
 import * as taskController from '../controllers/task.controller';
@@ -16,6 +17,11 @@ import {
   updateProjectSchema,
   updateProjectStatusSchema,
 } from './project.schemas';
+import {
+  createIssueSchema,
+  listIssuesQuerySchema,
+  projectIssueParamSchema,
+} from './issue.schemas';
 import {
   createRequirementSchema,
   listRequirementsQuerySchema,
@@ -63,6 +69,20 @@ projectRouter.post(
   }),
   projectAccess,
   asyncHandler(requirementController.createProjectRequirement),
+);
+
+projectRouter.get(
+  '/:id/issues',
+  validate({ params: projectIssueParamSchema, query: listIssuesQuerySchema }),
+  projectAccess,
+  asyncHandler(issueController.listProjectIssues),
+);
+
+projectRouter.post(
+  '/:id/issues',
+  validate({ params: projectIssueParamSchema, body: createIssueSchema }),
+  projectAccess,
+  asyncHandler(issueController.createProjectIssue),
 );
 
 projectRouter.get(

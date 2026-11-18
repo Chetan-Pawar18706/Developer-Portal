@@ -150,15 +150,23 @@ export const routes: Routes = [
               },
               {
                 path: 'issues',
-                data: {
-                  title: 'Issues',
-                  icon: 'bug_report',
-                  description: 'Project issue tracking will be available in a later part.',
-                },
-                loadComponent: () =>
-                  import('./shared/components/placeholder-page/placeholder-page.component').then(
-                    (module) => module.PlaceholderPageComponent,
-                  ),
+                children: [
+                  {
+                    path: '',
+                    pathMatch: 'full',
+                    loadComponent: () =>
+                      import('./features/issues/issue-list/issue-list.component').then(
+                        (module) => module.IssueListComponent,
+                      ),
+                  },
+                  {
+                    path: ':issueId',
+                    loadComponent: () =>
+                      import('./features/issues/issue-detail/issue-detail.component').then(
+                        (module) => module.IssueDetailComponent,
+                      ),
+                  },
+                ],
               },
               {
                 path: 'files',
@@ -228,7 +236,7 @@ export const routes: Routes = [
         data: {
           title: 'Issues',
           icon: 'bug_report',
-          description: 'Raise and track the issues that are blocking delivery.',
+          description: "Open a project's Issues tab to raise and track delivery blockers.",
         },
         loadComponent: () =>
           import('./shared/components/placeholder-page/placeholder-page.component').then(

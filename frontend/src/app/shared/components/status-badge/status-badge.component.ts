@@ -12,6 +12,9 @@ const TONE_BY_STATUS: Record<string, StatusTone> = {
   'on-track': 'success',
   in_review: 'warning',
   'in-review': 'warning',
+  open: 'warning',
+  in_discussion: 'warning',
+  reopened: 'warning',
   under_review: 'warning',
   'under-review': 'warning',
   clarification: 'warning',
@@ -32,6 +35,7 @@ const TONE_BY_STATUS: Record<string, StatusTone> = {
   off_track: 'danger',
   'off-track': 'danger',
   draft: 'neutral',
+  closed: 'neutral',
   backlog: 'neutral',
   archived: 'neutral',
 };
