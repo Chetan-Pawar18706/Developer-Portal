@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, tap } from 'rxjs';
 import type {
   CreateIssueRequest,
@@ -11,6 +12,7 @@ import type {
   UpdateIssueStatusRequest,
 } from '../../core/models/issue.model';
 import { IssueService } from '../../core/services/issue.service';
+import { RealtimeService } from '../../core/services/realtime.service';
 import type { Task } from '../../core/models/task.model';
 import { getErrorMessage } from '../../shared/utils/http-error';
 
@@ -29,6 +31,7 @@ const DEFAULT_FILTERS: IssueFilters = {
 @Injectable({ providedIn: 'root' })
 export class IssueStore {
   private readonly issueService = inject(IssueService);
+  private readonly realtime = inject(RealtimeService);
   private readonly projectId = signal('');
 
   readonly entities = signal<readonly Issue[]>([]);
@@ -42,6 +45,17 @@ export class IssueStore {
   readonly pageCount = computed(() =>
     Math.max(1, Math.ceil(this.total() / Math.max(1, this.filters().limit))),
   );
+
+  constructor() {
+    const applyIssue = (issue: Issue): void => {
+      if (issue.projectId === this.projectId()) {
+        this.applyIssue(issue);
+      }
+    };
+
+    this.realtime.issueCreated$.pipe(takeUntilDestroyed()).subscribe(applyIssue);
+    this.realtime.issueUpdated$.pipe(takeUntilDestroyed()).subscribe(applyIssue);
+  }
 
   load(projectId: string): void {
     if (this.projectId() !== projectId) {

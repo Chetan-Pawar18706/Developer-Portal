@@ -21,7 +21,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute } from '@angular/router';
-import { interval } from 'rxjs';
 import type {
   Comment,
   CommentEntityType,
@@ -29,16 +28,18 @@ import type {
 } from '../../core/models/comment.model';
 import type { FileLink } from '../../core/models/file.model';
 import type { ProjectMember, ProjectUserSummary } from '../../core/models/project.model';
+import type { TypingEvent } from '../../core/models/realtime.model';
 import { AuthService } from '../../core/services/auth.service';
 import { CommentService } from '../../core/services/comment.service';
 import { FileService } from '../../core/services/file.service';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { FileUploaderComponent } from '../files/file-uploader.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { UserAvatarComponent } from '../../shared/components/user-avatar/user-avatar.component';
 import { ConfirmDialogService } from '../../shared/services/confirm-dialog.service';
 import { getErrorMessage } from '../../shared/utils/http-error';
 
-const POLL_INTERVAL_MS = 30_000;
+const TYPING_TIMEOUT_MS = 3_000;
 const QUICK_REACTIONS = ['👍', '❤️', '🎉', '👀', '🚀'] as const;
 
 interface MentionToken {
@@ -123,6 +124,7 @@ export class CommentThreadComponent {
 
   private readonly commentService = inject(CommentService);
   private readonly fileService = inject(FileService);
+  private readonly realtime = inject(RealtimeService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
   private readonly confirmDialog = inject(ConfirmDialogService);
@@ -134,8 +136,10 @@ export class CommentThreadComponent {
       .map((snapshot) => snapshot.paramMap.get('id'))
       .find((value): value is string => Boolean(value)) ?? '';
   private loadedKey = '';
+  private readonly typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   readonly comments = signal<readonly Comment[]>([]);
+  readonly typingUsers = signal<readonly string[]>([]);
   readonly loading = signal(false);
   readonly posting = signal(false);
   readonly busyId = signal<string | null>(null);
@@ -196,13 +200,36 @@ export class CommentThreadComponent {
       }
     });
 
-    interval(POLL_INTERVAL_MS)
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => {
-        if (this.entityId() && this.resolvedProjectId()) {
-          this.load(true);
+    this.realtime.commentCreated$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((comment) => {
+        if (this.matchesThread(comment.projectId, comment.entityType, comment.entityId)) {
+          this.upsertComment(comment);
         }
       });
+
+    this.realtime.commentUpdated$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((comment) => {
+        if (this.matchesThread(comment.projectId, comment.entityType, comment.entityId)) {
+          this.upsertComment(comment);
+        }
+      });
+
+    this.realtime.commentDeleted$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        if (
+          event.projectId === this.resolvedProjectId() &&
+          (!event.entityId || event.entityId === this.entityId())
+        ) {
+          this.removeComments(event.deletedIds ?? [event.id]);
+        }
+      });
+
+    this.realtime.typing$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => this.applyTyping(event));
   }
 
   renderCommentText(value: string): string {
@@ -241,6 +268,14 @@ export class CommentThreadComponent {
     const textarea = event.target as HTMLTextAreaElement;
     this.draft.set(textarea.value);
     this.caret.set(textarea.selectionStart ?? textarea.value.length);
+
+    this.realtime.sendTyping(
+      this.resolvedProjectId(),
+      this.entityType(),
+      this.entityId(),
+      this.internalNote() && this.canUseInternal(),
+      this.draft().length > 0,
+    );
   }
 
   onCaretMove(event: Event): void {
@@ -418,6 +453,13 @@ export class CommentThreadComponent {
   }
 
   private resetComposer(): void {
+    this.realtime.sendTyping(
+      this.resolvedProjectId(),
+      this.entityType(),
+      this.entityId(),
+      this.internalNote() && this.canUseInternal(),
+      false,
+    );
     this.draft.set('');
     this.caret.set(0);
     this.replyTo.set(null);
@@ -436,5 +478,81 @@ export class CommentThreadComponent {
       );
 
     this.comments.set(replace(this.comments()));
+  }
+
+  private matchesThread(
+    projectId: string,
+    entityType: string,
+    entityId: string,
+  ): boolean {
+    return (
+      projectId === this.resolvedProjectId() &&
+      entityType === this.entityType() &&
+      entityId === this.entityId()
+    );
+  }
+
+  private upsertComment(comment: Comment): void {
+    const insert = (nodes: readonly Comment[]): Comment[] => {
+      const index = nodes.findIndex((node) => node.id === comment.id);
+
+      if (index >= 0) {
+        const next = [...nodes];
+        next[index] = comment;
+        return next;
+      }
+
+      if (comment.parentId) {
+        return nodes.map((node) => ({ ...node, replies: insert(node.replies) }));
+      }
+
+      return [...nodes, comment];
+    };
+
+    this.comments.set(insert(this.comments()));
+  }
+
+  private removeComments(ids: readonly string[]): void {
+    const remove = (nodes: readonly Comment[]): Comment[] =>
+      nodes
+        .filter((node) => !ids.includes(node.id))
+        .map((node) => ({ ...node, replies: remove(node.replies) }));
+
+    this.comments.set(remove(this.comments()));
+  }
+
+  private applyTyping(event: TypingEvent): void {
+    if (
+      event.projectId !== this.resolvedProjectId() ||
+      event.entityType !== this.entityType() ||
+      event.entityId !== this.entityId() ||
+      event.user.userId === this.currentUserId() ||
+      (event.isInternal && !this.canUseInternal())
+    ) {
+      return;
+    }
+
+    const existingTimer = this.typingTimers.get(event.user.userId);
+
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      this.typingTimers.delete(event.user.userId);
+    }
+
+    if (!event.isTyping) {
+      this.typingUsers.update((users) => users.filter((user) => user !== event.user.name));
+      return;
+    }
+
+    this.typingUsers.update((users) =>
+      users.includes(event.user.name) ? users : [...users, event.user.name],
+    );
+    this.typingTimers.set(
+      event.user.userId,
+      setTimeout(() => {
+        this.typingTimers.delete(event.user.userId);
+        this.typingUsers.update((users) => users.filter((user) => user !== event.user.name));
+      }, TYPING_TIMEOUT_MS),
+    );
   }
 }

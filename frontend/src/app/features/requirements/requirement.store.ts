@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, tap } from 'rxjs';
 import type {
   CreateChangeRequestRequest,
@@ -11,6 +12,7 @@ import type {
   UpdateRequirementRequest,
   UpdateRequirementStatusRequest,
 } from '../../core/models/requirement.model';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { RequirementService } from '../../core/services/requirement.service';
 import { getErrorMessage } from '../../shared/utils/http-error';
 
@@ -28,6 +30,7 @@ const DEFAULT_FILTERS: RequirementFilters = {
 @Injectable({ providedIn: 'root' })
 export class RequirementStore {
   private readonly requirementService = inject(RequirementService);
+  private readonly realtime = inject(RealtimeService);
   private readonly projectId = signal('');
 
   readonly entities = signal<readonly Requirement[]>([]);
@@ -49,6 +52,17 @@ export class RequirementStore {
   readonly rangeEnd = computed(() =>
     Math.min(this.filters().page * this.filters().limit, this.total()),
   );
+
+  constructor() {
+    const applyRequirement = (requirement: Requirement): void => {
+      if (requirement.projectId === this.projectId()) {
+        this.applyRequirement(requirement);
+      }
+    };
+
+    this.realtime.requirementCreated$.pipe(takeUntilDestroyed()).subscribe(applyRequirement);
+    this.realtime.requirementUpdated$.pipe(takeUntilDestroyed()).subscribe(applyRequirement);
+  }
 
   load(projectId: string): void {
     if (this.projectId() !== projectId) {

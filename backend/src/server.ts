@@ -3,6 +3,7 @@ import { connectDatabase, disconnectDatabase } from './config/db';
 import { env } from './config/env';
 import { startNotificationJobs } from './jobs/notification.job';
 import { startProjectHealthJobs } from './jobs/projectHealth.job';
+import { closeSocketServer, initSocketServer } from './sockets/socket.server';
 
 async function startServer(): Promise<void> {
   try {
@@ -15,12 +16,15 @@ async function startServer(): Promise<void> {
       server.once('listening', resolve);
       server.once('error', reject);
     });
+    await initSocketServer(server);
     console.log(`Server listening on http://localhost:${env.PORT}`);
 
     const shutdown = (signal: string): void => {
       console.log(`${signal} received, shutting down`);
-      server.close(() => {
-        void disconnectDatabase().finally(() => process.exit(0));
+      void closeSocketServer().finally(() => {
+        server.close(() => {
+          void disconnectDatabase().finally(() => process.exit(0));
+        });
       });
     };
 

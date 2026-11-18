@@ -1,5 +1,12 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +19,7 @@ import {
   PROJECT_STATUS_LABELS,
   type Project,
 } from '../../../core/models/project.model';
+import { RealtimeService } from '../../../core/services/realtime.service';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../../shared/components/loading-skeleton/loading-skeleton.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -55,12 +63,17 @@ const DETAIL_TABS: readonly DetailTab[] = [
 })
 export class ProjectDetailComponent {
   readonly store = inject(ProjectStore);
+  readonly realtime = inject(RealtimeService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly projectId = signal('');
   readonly tabs = DETAIL_TABS;
   readonly statusLabels = PROJECT_STATUS_LABELS;
   readonly priorityLabels = PROJECT_PRIORITY_LABELS;
+  readonly onlineNames = computed(() =>
+    this.realtime.onlineUsers().map((user) => user.name).join(', '),
+  );
 
   constructor() {
     this.route.paramMap
@@ -72,9 +85,12 @@ export class ProjectDetailComponent {
       )
       .subscribe((id) => {
         this.projectId.set(id);
+        this.realtime.joinProject(id);
         this.store.clearSelected();
         this.store.loadOne(id);
       });
+
+    this.destroyRef.onDestroy(() => this.realtime.leaveProject());
   }
 
   memberLabel(project: Project): string {

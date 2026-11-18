@@ -31,6 +31,7 @@ import {
 import type { Project, ProjectListQuery } from '../../core/models/project.model';
 import { FileService } from '../../core/services/file.service';
 import { ProjectService } from '../../core/services/project.service';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../shared/components/loading-skeleton/loading-skeleton.component';
 import {
@@ -64,6 +65,7 @@ type FolderFilter = FileFolder | 'all';
 export class GlobalFilesComponent implements OnInit {
   private readonly fileService = inject(FileService);
   private readonly projectService = inject(ProjectService);
+  private readonly realtime = inject(RealtimeService);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -91,6 +93,16 @@ export class GlobalFilesComponent implements OnInit {
 
     this.projectControl.valueChanges
       .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.load());
+
+    this.realtime.fileUploaded$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.load());
+    this.realtime.fileUpdated$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.load());
+    this.realtime.fileDeleted$
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.load());
 
     this.loadProjects();

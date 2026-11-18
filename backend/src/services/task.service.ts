@@ -30,6 +30,10 @@ import type {
   UpdateSubtasksInput,
   UpdateTaskInput,
 } from '../routes/task.schemas';
+import {
+  emitProjectEvent,
+  REALTIME_EVENTS,
+} from '../sockets/socket.server';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
 import { notify } from './notification.service';
@@ -762,7 +766,9 @@ export async function createTask(
 
   await refreshHealthSafely(project._id);
 
-  return getTask(task.id);
+  const publicTask = await getTask(task.id);
+  emitProjectEvent(publicTask.projectId, REALTIME_EVENTS.TASK_CREATED, publicTask);
+  return publicTask;
 }
 
 export interface CreateTaskFromIssueInput {
@@ -830,7 +836,9 @@ export async function createTaskFromIssue(
 
   await refreshHealthSafely(project._id);
 
-  return getTask(task.id);
+  const publicTask = await getTask(task.id);
+  emitProjectEvent(publicTask.projectId, REALTIME_EVENTS.TASK_CREATED, publicTask);
+  return publicTask;
 }
 
 export async function updateTask(
@@ -935,7 +943,9 @@ export async function updateTask(
 
   await refreshHealthSafely(task.project);
 
-  return getTask(task.id);
+  const publicTask = await getTask(task.id);
+  emitProjectEvent(publicTask.projectId, REALTIME_EVENTS.TASK_UPDATED, publicTask);
+  return publicTask;
 }
 
 export async function moveTask(
@@ -976,7 +986,9 @@ export async function moveTask(
 
   await refreshHealthSafely(task.project);
 
-  return getTask(task.id);
+  const publicTask = await getTask(task.id);
+  emitProjectEvent(publicTask.projectId, REALTIME_EVENTS.TASK_MOVED, publicTask);
+  return publicTask;
 }
 
 export async function deleteTask(
@@ -1032,6 +1044,11 @@ export async function deleteTask(
   });
 
   await refreshHealthSafely(projectId);
+
+  emitProjectEvent(projectId.toString(), REALTIME_EVENTS.TASK_DELETED, {
+    projectId: projectId.toString(),
+    id: taskId.toString(),
+  });
 }
 
 export async function addTimeLog(
@@ -1066,7 +1083,9 @@ export async function addTimeLog(
 
   await refreshHealthSafely(task.project);
 
-  return getTask(task.id);
+  const publicTask = await getTask(task.id);
+  emitProjectEvent(publicTask.projectId, REALTIME_EVENTS.TASK_UPDATED, publicTask);
+  return publicTask;
 }
 
 export async function updateSubtasks(
@@ -1093,7 +1112,9 @@ export async function updateSubtasks(
     },
   });
 
-  return getTask(task.id);
+  const publicTask = await getTask(task.id);
+  emitProjectEvent(publicTask.projectId, REALTIME_EVENTS.TASK_UPDATED, publicTask);
+  return publicTask;
 }
 
 export async function reviewTaskAsClient(
@@ -1166,7 +1187,9 @@ export async function reviewTaskAsClient(
 
   await notifyClientReview(task, project, actor.id, input.status);
 
-  return getTask(task.id);
+  const publicTask = await getTask(task.id);
+  emitProjectEvent(publicTask.projectId, REALTIME_EVENTS.TASK_MOVED, publicTask);
+  return publicTask;
 }
 
 export async function getRequirementProgress(

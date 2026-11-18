@@ -27,7 +27,7 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { filter, interval, map, startWith } from 'rxjs';
+import { filter, map, startWith } from 'rxjs';
 import type {
   Notification,
   NotificationType,
@@ -35,6 +35,7 @@ import type {
 import { ROLE_LABELS, type Role } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { UserAvatarComponent } from '../components/user-avatar/user-avatar.component';
 
@@ -118,6 +119,7 @@ const NAV_ITEMS: readonly NavItem[] = [
 export class MainLayoutComponent {
   private readonly auth = inject(AuthService);
   private readonly notifications = inject(NotificationService);
+  private readonly realtime = inject(RealtimeService);
   private readonly router = inject(Router);
   private readonly breakpoint = inject(BreakpointObserver);
   readonly theme = inject(ThemeService);
@@ -187,8 +189,9 @@ export class MainLayoutComponent {
         }
       });
 
-    interval(30_000)
-      .pipe(startWith(0), takeUntilDestroyed())
+    this.refreshNotifications();
+    this.realtime.notificationNew$
+      .pipe(takeUntilDestroyed())
       .subscribe(() => this.refreshNotifications());
   }
 

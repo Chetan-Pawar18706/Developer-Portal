@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, catchError, finalize, tap, throwError } from 'rxjs';
 import type {
   AddTimeLogRequest,
@@ -14,6 +15,7 @@ import type {
   UpdateTaskRequest,
 } from '../../core/models/task.model';
 import { TASK_STATUSES } from '../../core/models/task.model';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { TaskService } from '../../core/services/task.service';
 import { getErrorMessage } from '../../shared/utils/http-error';
 
@@ -94,6 +96,7 @@ function optimisticMove(
 @Injectable({ providedIn: 'root' })
 export class TaskStore {
   private readonly taskService = inject(TaskService);
+  private readonly realtime = inject(RealtimeService);
 
   readonly entities = signal<readonly Task[]>([]);
   readonly selected = signal<Task | null>(null);
@@ -138,6 +141,27 @@ export class TaskStore {
       done: groups.done.length,
     };
   });
+
+  constructor() {
+    const applyTask = (task: Task): void => {
+      if (task.projectId === this.projectId()) {
+        this.upsert(task);
+      }
+    };
+
+    this.realtime.taskCreated$.pipe(takeUntilDestroyed()).subscribe(applyTask);
+    this.realtime.taskUpdated$.pipe(takeUntilDestroyed()).subscribe(applyTask);
+    this.realtime.taskMoved$.pipe(takeUntilDestroyed()).subscribe(applyTask);
+    this.realtime.taskDeleted$.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event.projectId === this.projectId()) {
+        this.entities.update((tasks) => tasks.filter((task) => task.id !== event.id));
+
+        if (this.selected()?.id === event.id) {
+          this.selected.set(null);
+        }
+      }
+    });
+  }
 
   load(projectId: string): Observable<{ data: Task[]; total: number; page: number; limit: number }> {
     const projectChanged = this.projectId() !== projectId;

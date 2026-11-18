@@ -80,13 +80,19 @@
   background: var(--mat-sys-tertiary-container);
 }
 
-.internal-hint {
+.internal-hint,
+.typing-hint {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   margin: 0;
   font-size: 0.78rem;
   color: var(--mat-sys-tertiary);
+}
+
+.typing-hint {
+  color: var(--mat-sys-primary);
+  font-style: italic;
 }
 
 .mention-option {

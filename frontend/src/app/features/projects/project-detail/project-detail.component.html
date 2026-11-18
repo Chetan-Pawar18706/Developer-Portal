@@ -29,6 +29,12 @@
             <mat-icon>payments</mat-icon>
             {{ project.budget | currency: 'INR' : 'symbol' : '1.0-0' }}
           </span>
+          @if (realtime.onlineUsers().length > 0) {
+            <span [matTooltip]="onlineNames()" class="online-indicator">
+              <mat-icon>circle</mat-icon>
+              {{ realtime.onlineUsers().length }} online
+            </span>
+          }
           <span [matTooltip]="memberLabel(project)">
             <mat-icon>group</mat-icon>
             {{ project.members.length }} members

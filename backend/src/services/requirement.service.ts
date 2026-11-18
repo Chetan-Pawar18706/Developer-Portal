@@ -25,6 +25,10 @@ import type {
   UpdateRequirementInput,
   UpdateRequirementStatusInput,
 } from '../routes/requirement.schemas';
+import {
+  emitProjectEvent,
+  REALTIME_EVENTS,
+} from '../sockets/socket.server';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
 import { resolveFileLinks, type PublicFileLink } from './file.service';
@@ -602,7 +606,13 @@ export async function createRequirement(
     },
   });
 
-  return getRequirement(requirement.id, actor);
+  const publicRequirement = await getRequirement(requirement.id, actor);
+  emitProjectEvent(
+    publicRequirement.projectId,
+    REALTIME_EVENTS.REQUIREMENT_CREATED,
+    publicRequirement,
+  );
+  return publicRequirement;
 }
 
 export async function updateRequirement(
@@ -673,7 +683,13 @@ export async function updateRequirement(
     },
   });
 
-  return getRequirement(requirement.id, actor);
+  const publicRequirement = await getRequirement(requirement.id, actor);
+  emitProjectEvent(
+    publicRequirement.projectId,
+    REALTIME_EVENTS.REQUIREMENT_UPDATED,
+    publicRequirement,
+  );
+  return publicRequirement;
 }
 
 export async function changeRequirementStatus(
@@ -732,7 +748,13 @@ export async function changeRequirementStatus(
     { roles: ['pm'] },
   );
 
-  return getRequirement(requirement.id, actor);
+  const publicRequirement = await getRequirement(requirement.id, actor);
+  emitProjectEvent(
+    publicRequirement.projectId,
+    REALTIME_EVENTS.REQUIREMENT_UPDATED,
+    publicRequirement,
+  );
+  return publicRequirement;
 }
 
 export async function createRequirementChangeRequest(
@@ -789,5 +811,11 @@ export async function createRequirementChangeRequest(
     },
   });
 
-  return getRequirement(changeRequest.id);
+  const publicRequirement = await getRequirement(changeRequest.id);
+  emitProjectEvent(
+    publicRequirement.projectId,
+    REALTIME_EVENTS.REQUIREMENT_CREATED,
+    publicRequirement,
+  );
+  return publicRequirement;
 }

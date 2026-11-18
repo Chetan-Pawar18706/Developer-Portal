@@ -12,6 +12,7 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthService } from './core/services/auth.service';
+import { RealtimeService } from './core/services/realtime.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,5 +25,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     provideCharts(withDefaultRegisterables()),
     provideAppInitializer(() => inject(AuthService).restoreSession()),
+    provideAppInitializer(() => {
+      inject(RealtimeService);
+    }),
   ],
 };

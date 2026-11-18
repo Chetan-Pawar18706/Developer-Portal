@@ -16,6 +16,10 @@ import type {
   ToggleReactionInput,
   UpdateCommentInput,
 } from '../routes/comment.schemas';
+import {
+  emitProjectEvent,
+  REALTIME_EVENTS,
+} from '../sockets/socket.server';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
 import { resolveFileLinks, type PublicFileLink } from './file.service';
@@ -531,10 +535,17 @@ export async function createComment(
 
   await notifyMentions(comment, project, actor, input.isInternal);
 
-  return toPublicComment(
+  const publicComment = await toPublicComment(
     await findPopulatedComment(comment.id),
     actor.role === 'client',
   );
+  emitProjectEvent(
+    publicComment.projectId,
+    REALTIME_EVENTS.COMMENT_CREATED,
+    publicComment,
+    publicComment.isInternal,
+  );
+  return publicComment;
 }
 
 export async function updateComment(
@@ -560,10 +571,17 @@ export async function updateComment(
     meta: { commentId: comment.id },
   });
 
-  return toPublicComment(
+  const publicComment = await toPublicComment(
     await findPopulatedComment(comment.id),
     actor.role === 'client',
   );
+  emitProjectEvent(
+    publicComment.projectId,
+    REALTIME_EVENTS.COMMENT_UPDATED,
+    publicComment,
+    publicComment.isInternal,
+  );
+  return publicComment;
 }
 
 export async function deleteComment(
@@ -624,6 +642,19 @@ export async function deleteComment(
     entityId: comment._id,
     meta: { commentId: comment.id, deletedCount: ids.size },
   });
+
+  emitProjectEvent(
+    comment.project.toString(),
+    REALTIME_EVENTS.COMMENT_DELETED,
+    {
+      projectId: comment.project.toString(),
+      id: comment.id,
+      entityType: comment.entityType,
+      entityId: comment.entityId.toString(),
+      deletedIds: [...ids],
+    },
+    comment.isInternal,
+  );
 }
 
 export async function toggleReaction(
@@ -660,8 +691,15 @@ export async function toggleReaction(
     meta: { commentId: comment.id, emoji: input.emoji },
   });
 
-  return toPublicComment(
+  const publicComment = await toPublicComment(
     await findPopulatedComment(comment.id),
     actor.role === 'client',
   );
+  emitProjectEvent(
+    publicComment.projectId,
+    REALTIME_EVENTS.COMMENT_UPDATED,
+    publicComment,
+    publicComment.isInternal,
+  );
+  return publicComment;
 }

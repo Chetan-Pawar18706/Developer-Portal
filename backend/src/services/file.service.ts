@@ -10,6 +10,10 @@ import {
 import { Project } from '../models/project.model';
 import type { UserRole } from '../models/user.model';
 import type { ListFilesQuery } from '../routes/file.schemas';
+import {
+  emitProjectEvent,
+  REALTIME_EVENTS,
+} from '../sockets/socket.server';
 import { ApiError } from '../utils/ApiError';
 import {
   buildProjectVisibilityFilter,
@@ -224,7 +228,18 @@ export async function createFiles(
   const populated = await Promise.all(
     created.map((file) => findPopulatedFile(file.id)),
   );
-  return populated.map(toPublicFile);
+  const files = populated.map(toPublicFile);
+
+  for (const file of files) {
+    emitProjectEvent(
+      file.projectId,
+      REALTIME_EVENTS.FILE_UPLOADED,
+      file,
+      file.isInternal,
+    );
+  }
+
+  return files;
 }
 
 export async function listFiles(
@@ -376,7 +391,14 @@ export async function addFileVersion(
   file.version += 1;
   await file.save();
 
-  return toPublicFile(await findPopulatedFile(file.id));
+  const publicFile = toPublicFile(await findPopulatedFile(file.id));
+  emitProjectEvent(
+    publicFile.projectId,
+    REALTIME_EVENTS.FILE_UPDATED,
+    publicFile,
+    publicFile.isInternal,
+  );
+  return publicFile;
 }
 
 function assertCanDeleteFile(file: FileDocument, actor: FileActor): void {
@@ -398,9 +420,20 @@ export async function deleteFile(
     ...populated.versions.map((version) => version.storagePath),
   ];
 
+  const projectId = isPopulatedProject(populated.project)
+    ? populated.project._id.toString()
+    : populated.project.toString();
+
   await File.deleteOne({ _id: file._id });
 
   await Promise.all(paths.map((storagePath) => storageService.remove(storagePath)));
+
+  emitProjectEvent(
+    projectId,
+    REALTIME_EVENTS.FILE_DELETED,
+    { projectId, id: file.id, isInternal: file.isInternal },
+    file.isInternal,
+  );
 }
 
 export async function resolveFileLinks(

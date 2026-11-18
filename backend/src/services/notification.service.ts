@@ -14,6 +14,10 @@ import {
   type UserRole,
 } from '../models/user.model';
 import type { ListNotificationsQuery } from '../routes/notification.schemas';
+import {
+  emitToUser,
+  REALTIME_EVENTS,
+} from '../sockets/socket.server';
 import { ApiError } from '../utils/ApiError';
 import { sendNotificationEmail } from './email.service';
 
@@ -126,7 +130,7 @@ export async function notify(
     return;
   }
 
-  await Notification.insertMany(
+  const inserted = await Notification.insertMany(
     users.map((user) => ({
       user: user._id,
       project: new Types.ObjectId(payload.projectId),
@@ -136,6 +140,14 @@ export async function notify(
       isRead: false,
     })),
   );
+
+  for (const notification of inserted) {
+    emitToUser(
+      notification.user.toString(),
+      REALTIME_EVENTS.NOTIFICATION_NEW,
+      toPublicNotification(notification),
+    );
+  }
 
   const preferenceKey = EMAIL_PREFERENCE_KEYS[payload.type];
   const emailRecipients =

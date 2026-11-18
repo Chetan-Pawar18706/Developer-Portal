@@ -17,6 +17,10 @@ import type {
   UpdateIssueInput,
   UpdateIssueStatusInput,
 } from '../routes/issue.schemas';
+import {
+  emitProjectEvent,
+  REALTIME_EVENTS,
+} from '../sockets/socket.server';
 import { ApiError } from '../utils/ApiError';
 import { logActivity } from './activity.service';
 import { resolveFileLinks, type PublicFileLink } from './file.service';
@@ -449,7 +453,9 @@ export async function createIssue(
     },
   });
 
-  return getIssue(issue.id, actor);
+  const publicIssue = await getIssue(issue.id, actor);
+  emitProjectEvent(publicIssue.projectId, REALTIME_EVENTS.ISSUE_CREATED, publicIssue);
+  return publicIssue;
 }
 
 export async function updateIssue(
@@ -547,7 +553,9 @@ export async function updateIssue(
     },
   });
 
-  return getIssue(issue.id, actor);
+  const publicIssue = await getIssue(issue.id, actor);
+  emitProjectEvent(publicIssue.projectId, REALTIME_EVENTS.ISSUE_UPDATED, publicIssue);
+  return publicIssue;
 }
 
 export async function changeIssueStatus(
@@ -594,7 +602,9 @@ export async function changeIssueStatus(
     link: `/projects/${issue.project.toString()}/issues/${issue._id.toString()}`,
   });
 
-  return getIssue(issue.id, actor);
+  const publicIssue = await getIssue(issue.id, actor);
+  emitProjectEvent(publicIssue.projectId, REALTIME_EVENTS.ISSUE_UPDATED, publicIssue);
+  return publicIssue;
 }
 
 export async function convertIssueToTask(

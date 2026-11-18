@@ -31,6 +31,7 @@ import {
 } from '../../core/models/file.model';
 import { AuthService } from '../../core/services/auth.service';
 import { FileService } from '../../core/services/file.service';
+import { RealtimeService } from '../../core/services/realtime.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { LoadingSkeletonComponent } from '../../shared/components/loading-skeleton/loading-skeleton.component';
 import { FileUploaderComponent } from './file-uploader.component';
@@ -65,6 +66,7 @@ type ViewMode = 'grid' | 'list';
 export class FilesTabComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly fileService = inject(FileService);
+  private readonly realtime = inject(RealtimeService);
   private readonly dialog = inject(MatDialog);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -102,6 +104,16 @@ export class FilesTabComponent implements OnInit {
     this.searchControl.valueChanges
       .pipe(debounceTime(250), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.load());
+
+    this.realtime.fileUploaded$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((file) => this.reloadForProject(file.projectId));
+    this.realtime.fileUpdated$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((file) => this.reloadForProject(file.projectId));
+    this.realtime.fileDeleted$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => this.reloadForProject(event.projectId));
   }
 
   setFolder(folder: FolderFilter): void {
@@ -222,5 +234,11 @@ export class FilesTabComponent implements OnInit {
         },
         error: () => this.uploadingVersion.set(false),
       });
+  }
+
+  private reloadForProject(projectId: string): void {
+    if (projectId === this.projectId()) {
+      this.load();
+    }
   }
 }
