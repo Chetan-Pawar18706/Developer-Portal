@@ -8,12 +8,11 @@ issues, discusses changes in comments, exchanges files and signs off on delivery
 delivery team reviews requirements, creates and assigns tasks, updates status, logs time
 and publishes deliverables.
 
-The repository contains two applications and a root Playwright suite:
+The repository contains two applications:
 
 ```
 backend/    Node.js + Express + TypeScript + Mongoose REST/Socket.IO API
 frontend/   Angular standalone SPA
-e2e/        Playwright end-to-end tests (root package)
 ```
 
 Access is role-based (`admin`, `pm`, `developer`, `client`). Permissions are enforced on
@@ -55,7 +54,6 @@ their own projects, and internal comments/files are never returned to clients.
 | Security | Helmet, CORS with credentials, express-rate-limit, express-mongo-sanitize, sanitize-html |
 | Frontend | Angular 22 standalone components, signals, OnPush, Angular Material/CDK, RxJS, ng2-charts, TipTap, socket.io-client |
 | Unit/integration tests | Jest, supertest, mongodb-memory-server, Angular CLI test builder, Vitest/jsdom |
-| End-to-end tests | Playwright + Chromium at the repository root |
 
 ## Prerequisites
 
@@ -79,11 +77,6 @@ npm run dev                   # http://localhost:5000
 cd frontend
 npm install
 npm start                     # http://localhost:4200
-
-# End-to-end tooling (root, once)
-cd ..
-npm install
-npm run e2e:install
 ```
 
 The API health check is `GET http://localhost:5000/api/health`. There is no Angular
@@ -126,17 +119,6 @@ export const environment = {
 };
 ```
 
-Playwright overrides (all optional):
-
-| Variable | Default |
-| --- | --- |
-| `E2E_MONGO_URI` | `mongodb://127.0.0.1:27017/devportal-e2e` |
-| `E2E_API_URL` | `http://localhost:5000` |
-| `E2E_FRONTEND_URL` | `http://localhost:4200` |
-| `E2E_CLIENT_EMAIL` / `E2E_CLIENT_PASSWORD` | seeded client demo account |
-| `E2E_PM_EMAIL` / `E2E_PM_PASSWORD` | seeded PM demo account |
-| `E2E_DEVELOPER_EMAIL` / `E2E_DEVELOPER_PASSWORD` | seeded developer demo account |
-
 ## Seed users
 
 Run `npm run seed` in `backend/` to reset the development database and load demo users,
@@ -153,10 +135,9 @@ when `NODE_ENV=production`.
 | Nikhil Sury | client | `nikhilsury@gmail.com` | `nikhil@123` |
 
 Seeded users include realistic sample work profiles (avatar URL, job title, company,
-location, skills and social links). Seeded projects cover draft, submitted, active, on-hold and completed
-states. Requirements cover approvals, clarification requests, version history and a linked
-change request. The Playwright suite reseeds its own `devportal-e2e` database before it
-runs, so it never touches development data.
+location, skills and social links). Seeded projects cover draft, submitted, active,
+on-hold and completed states. Requirements cover approvals, clarification requests,
+version history and a linked change request.
 
 ## Scripts
 
@@ -181,14 +162,6 @@ runs, so it never touches development data.
 | `npm run build` | Production build into `dist/` |
 | `npm run watch` | Development build in watch mode |
 | `npm test -- --watch=false` | Run unit tests once |
-
-### Repository root
-
-| Command | Description |
-| --- | --- |
-| `npm run e2e` | Run Playwright against the seeded backend and Angular dev server |
-| `npm run e2e:ui` | Open the Playwright UI |
-| `npm run e2e:install` | Install the Chromium browser |
 
 ## Folder structure
 
@@ -221,10 +194,9 @@ Developer-Portal/
 │   │                      communication, files, profile, admin
 │   ├── src/environments/  API and socket URLs
 │   └── package.json
-├── e2e/                   Playwright global setup and delivery-flow spec
-├── playwright.config.ts
 ├── SECURITY_REVIEW.md
-└── package.json           root e2e scripts
+├── TESTING.md             single test-case catalog and suite inventory
+└── README.md
 ```
 
 ## API summary
@@ -653,85 +625,28 @@ stateDiagram-v2
 
 ## Test cases
 
-The following catalog maps the functional scenarios to the automated suites where they
-are already covered. `E2E` is the root Playwright delivery workflow.
-
-| ID | Area | Steps | Expected result | Coverage |
-| --- | --- | --- | --- | --- |
-| TC-01 | Auth | Log in with a valid seeded account. | `200`, access token in body, httpOnly refresh cookie, correct role. | Backend `auth.test.ts` |
-| TC-02 | Auth | Log in with a wrong password. | `401`, no access token issued. | Backend `auth.test.ts` |
-| TC-03 | Auth | Call `/refresh` with a valid refresh cookie. | New access token and rotated refresh cookie. | Backend `auth.test.ts` |
-| TC-04 | Auth | Deactivate a user, then call an authenticated route with their token. | `401`; current `isActive` is checked on every request. | Backend `security.test.ts` |
-| TC-05 | RBAC | Client calls `PATCH /api/users/:id/role`. | `403`; role changes are admin-only. | Backend `security.test.ts` |
-| TC-06 | Projects | Client B requests project A by id. | `403`/`404`; project membership is enforced in the service. | Backend `project.service.test.ts` |
-| TC-07 | Requirements | Client submits a draft requirement, PM approves it. | Status moves `draft → submitted → under_review → approved`; activity is logged. | Backend `requirement.service.test.ts` |
-| TC-08 | Requirements | Try to edit an approved requirement. | Edit is rejected to protect approved scope. | Backend `requirement.service.test.ts` |
-| TC-09 | Requirements | Create a change request from an approved requirement. | New requirement stores `changeRequestOf`. | Backend `requirement.service.test.ts` |
-| TC-10 | Tasks | PM creates a task and assigns a developer. | Assignee is stored; assignee receives a notification. | Backend `task.service.test.ts` |
-| TC-11 | Tasks | Developer updates an assigned task, then an unassigned one. | Assigned update succeeds; unassigned update is `403`. | Backend `task.service.test.ts` |
-| TC-12 | Tasks | Log `0.25` hours and then `0` hours. | First is accepted; second fails model validation. | Backend `task.service.test.ts` |
-| TC-13 | Tasks | Move a task in the board and simulate a failed save. | Order persists; the Angular store rolls back optimistic state. | Frontend `task.store.spec.ts` |
-| TC-14 | Tasks | Client approves a delivered task. | `clientReview.status = approved`, `by` and `at` are set. | Backend `task.service.test.ts`, E2E |
-| TC-15 | Issues | Client raises a bug; PM reviews it. | Issue is auto-assigned to the PM and status starts at `open`. | Backend `issue.routes.test.ts` |
-| TC-16 | Issues | PM converts an issue into a task. | `issue.linkedTask` and `task.linkedIssue` reference each other. | Backend `issue.routes.test.ts` |
-| TC-17 | Comments | PM writes an internal comment; client lists comments. | Internal comment is absent from the client response. | Backend `comment.routes.test.ts` |
-| TC-18 | Comments | Mention a teammate in a comment. | Mentioned user receives a notification and realtime event. | Backend `comment.routes.test.ts`, `socket.server.test.ts` |
-| TC-19 | Files | Upload `.exe` and a 26 MB PDF. | Both are rejected by extension/MIME/size validation. | Backend `file.routes.test.ts` |
-| TC-20 | Files | Upload a new version of an existing PDF. | `version` increments and previous `versions` entries remain. | Backend `file.routes.test.ts` |
-| TC-21 | Files | Mark a file internal, then list as client. | Internal file is not returned to the client. | Backend `file.routes.test.ts` |
-| TC-22 | Delivery | Client signs off a completed project with rating 4. | `deliverySignOff` stores signer, time, rating and feedback. | Backend `sign-off.service.test.ts`, E2E |
-| TC-23 | Security | Send `$where`/`$ne` operators in query parameters. | Request is rejected by Zod/mongo-sanitize validation. | Backend `security.test.ts` |
-| TC-24 | Security | Post rich text containing `<script>`. | Stored HTML is sanitized before rendering. | Backend `security.test.ts` |
-| TC-25 | Profile | Update GitHub with a handle and LinkedIn with a full URL. | Both are accepted; links render correctly on the public profile. | Backend `user.test.ts`, Frontend `profile.service.spec.ts` |
-| TC-26 | Profile | Upload a 2 MB PNG, then a `.gif`. | PNG is stored and served; `.gif` is rejected. | Backend `user.test.ts` |
-| TC-26a | Profile | Paste an `http(s)` avatar URL, save, then open the profile as another user. | The external image is shown; the previous uploaded file is removed. Broken images fall back to initials instead of showing alt text. | Backend `user.test.ts`, Frontend `user-avatar.component.spec.ts` |
-| TC-27 | Profile | Request another user's public profile. | Work/social details are returned; email and storage paths are absent. | Backend `user.test.ts` |
-| TC-28 | Dashboards | Seed known tasks, issues and time logs, then load dashboards. | Counts, hour totals, workload and aging buckets match the fixtures. | Backend `dashboard.service.test.ts` |
-| TC-29 | Frontend | Developer navigates to a PM-only route. | `roleGuard` redirects the user away from the route. | Frontend `role.guard.spec.ts` |
-| TC-30 | Search | Search projects, tasks and requirements with a common keyword. | Only documents the caller may access are returned. | Backend `search.service.test.ts` |
-| TC-31 | Notifications | Mark one notification read, then mark all read. | Read flags update and unread count decreases. | Backend `notification.routes.test.ts` |
-| TC-32 | E2E | Run the full seeded client → PM → developer → client delivery flow. | Project is delivered and signed off without manual intervention. | Root `npm run e2e` |
-
-### Automated suite inventory
-
-| Layer | Files | Focus |
-| --- | --- | --- |
-| Backend routes | `auth.test.ts`, `user.test.ts`, `security.test.ts`, `health.test.ts`, `comment.routes.test.ts`, `file.routes.test.ts`, `issue.routes.test.ts`, `notification.routes.test.ts` | HTTP status codes, cookies, validation, role/project gates, internal visibility. |
-| Backend services | `project.service.test.ts`, `requirement.service.test.ts`, `task.service.test.ts`, `sign-off.service.test.ts`, `search.service.test.ts`, `dashboard.service.test.ts`, `storage.service.test.ts` | Business rules, aggregation, path-traversal rejection. |
-| Backend realtime | `socket.server.test.ts` | Room isolation, membership revalidation, live updates. |
-| Frontend | `app.spec.ts`, `landing.component.spec.ts`, `role.guard.spec.ts`, `auth.service.spec.ts`, `auth.interceptor.spec.ts`, `task.store.spec.ts`, `profile.service.spec.ts`, `user-avatar.component.spec.ts` | Guards, token flow, store optimistic updates, profile API, avatar URL resolution and broken-image fallback. |
-| E2E | `e2e/delivery-flow.spec.ts` | Full cross-role delivery workflow against freshly seeded servers. |
+The complete test-case catalog and automated suite inventory live in
+[`TESTING.md`](TESTING.md). Playwright/e2e tooling is not part of this repository;
+testing is limited to backend and frontend automated suites plus a documented manual
+smoke test.
 
 ## Testing
 
+Run the backend and frontend suites from their own folders:
+
 ```bash
-# Backend unit + integration tests with coverage
 cd backend
 npm run build
 npm test -- --coverage
 npm audit
 
-# Frontend unit tests
-cd frontend
+cd ../frontend
 npm run build
 npm test -- --watch=false
-npm audit
-
-# End-to-end delivery workflow (local mongod required)
-cd ..
-npm run e2e
 npm audit
 ```
 
 Backend tests use `mongodb-memory-server`, so no external database is needed for them.
-The e2e suite starts fresh API and Angular servers, seeds `devportal-e2e`, and walks the
-full flow: client login → project → requirement → PM review → client approval → PM task
-→ developer move → client task approval.
-
-For a manual smoke test after seeding, sign in as each demo user and confirm that the
-client can create a project, the PM can review and assign work, the developer can update
-an assigned task, and the client can approve it. To check the profile flow, open
-**Profile** as a developer, either upload a PNG/JPEG picture or paste an `http(s)` image
-URL, then save work/social details. Sign in as another user and open a project's **Team**
-list to view that developer's profile. `SECURITY_REVIEW.md` documents the security audit,
+The full test-case catalog, automated suite inventory and manual smoke steps are in
+[`TESTING.md`](TESTING.md). `SECURITY_REVIEW.md` documents the security audit,
 dependency-audit results and hardening decisions.

@@ -21,12 +21,6 @@ backend/uploads/*
 # Test coverage
 coverage/
 
-# Playwright output
-test-results/
-playwright-report/
-blob-report/
-.playwright/
-
 # Logs
 *.log
 npm-debug.log*

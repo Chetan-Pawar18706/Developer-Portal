@@ -20,8 +20,8 @@ project-platform/
   cookie), bcryptjs, multer, Socket.IO, nodemailer, node-cron, pdfkit.
 - Frontend: Angular Material, CDK drag-drop, typed Reactive Forms, OnPush, lazy-loaded
   routes, ng2-charts, socket.io-client, TipTap or ngx-quill.
-- Tests: Jest + supertest + mongodb-memory-server (backend), Angular unit tests,
-  Playwright (e2e).
+- Tests: Jest + supertest + mongodb-memory-server (backend), Angular unit tests. Test
+  cases are documented in `TESTING.md`.
 
 ## Roles
 admin, pm, developer, client

@@ -1,7 +1,7 @@
 # Security Review
 
 Date: 18 November 2026
-Scope: complete repository (`backend`, `frontend`, repository-root Playwright setup).
+Scope: complete repository (`backend` and `frontend`).
 
 ## Executive summary
 
@@ -61,7 +61,6 @@ Commands run from the repository root:
 
 - `cd backend && npm audit`
 - `cd frontend && npm audit`
-- `npm audit` (root e2e tooling)
 
 ### `backend`
 
@@ -87,10 +86,6 @@ does not affect production request handling; they are tracked as follow-up work.
 
 0 vulnerabilities across all severity levels.
 
-### root (`@playwright/test`)
-
-0 vulnerabilities across all severity levels.
-
 ## Test coverage added
 
 - Backend route/integration tests: authentication flow and cookie flags, role gates,
@@ -102,9 +97,7 @@ does not affect production request handling; they are tracked as follow-up work.
 - Frontend unit tests: `TaskStore` loading, filtering, grouping, optimistic move with
   rollback, realtime updates and saving states; `ProfileService` developer lookup and
   multipart avatar upload. Existing `AuthService`, `authInterceptor` and `roleGuard`
-  specs were retained and exercised.
-- Playwright e2e: complete client → PM → developer → client delivery workflow, seeded
-  with demo accounts.
+  specs were retained and exercised. The complete test-case catalog is in `TESTING.md`.
 
 ## How to run the checks
 
@@ -120,9 +113,4 @@ cd frontend
 npm run build
 npm test -- --watch=false
 npm audit
-
-# e2e (requires local mongod on 127.0.0.1:27017)
-cd ..
-npm run e2e:install   # first time only
-npm run e2e
 ```
