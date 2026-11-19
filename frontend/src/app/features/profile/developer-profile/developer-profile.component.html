@@ -44,44 +44,75 @@
           </div>
         </div>
 
-        <div class="profile-actions">
-          @if (githubUrl(); as url) {
-            <a mat-stroked-button [href]="url" target="_blank" rel="noopener noreferrer">
-              <mat-icon>code</mat-icon>
-              GitHub
-            </a>
-          }
-          @if (linkedinUrl(); as url) {
-            <a mat-stroked-button [href]="url" target="_blank" rel="noopener noreferrer">
-              <mat-icon>work</mat-icon>
-              LinkedIn
-            </a>
-          }
-          @if (member.website) {
-            <a mat-stroked-button [href]="member.website" target="_blank" rel="noopener noreferrer">
-              <mat-icon>link</mat-icon>
-              Website
-            </a>
-          }
+        <div class="section-block">
+          <h2>Work details</h2>
+          <dl class="detail-grid">
+            <div>
+              <dt>Job title</dt>
+              <dd>{{ member.jobTitle || 'Not provided' }}</dd>
+            </div>
+            <div>
+              <dt>Company</dt>
+              <dd>{{ member.company || 'Not provided' }}</dd>
+            </div>
+            <div>
+              <dt>Location</dt>
+              <dd>{{ member.location || 'Not provided' }}</dd>
+            </div>
+            <div>
+              <dt>Website</dt>
+              <dd>
+                @if (member.website) {
+                  <a [href]="member.website" target="_blank" rel="noopener noreferrer">
+                    {{ member.website }}
+                  </a>
+                } @else {
+                  Not provided
+                }
+              </dd>
+            </div>
+          </dl>
         </div>
 
-        @if (member.bio) {
-          <div class="section-block">
-            <h2>About</h2>
-            <p class="bio">{{ member.bio }}</p>
+        <div class="section-block">
+          <h2>Links</h2>
+          <div class="profile-actions">
+            @if (githubUrl(); as url) {
+              <a mat-stroked-button [href]="url" target="_blank" rel="noopener noreferrer">
+                <mat-icon>code</mat-icon>
+                GitHub
+              </a>
+            } @else {
+              <span class="empty-value">GitHub: Not provided</span>
+            }
+            @if (linkedinUrl(); as url) {
+              <a mat-stroked-button [href]="url" target="_blank" rel="noopener noreferrer">
+                <mat-icon>work</mat-icon>
+                LinkedIn
+              </a>
+            } @else {
+              <span class="empty-value">LinkedIn: Not provided</span>
+            }
           </div>
-        }
+        </div>
 
-        @if (member.skills.length > 0) {
-          <div class="section-block">
-            <h2>Skills</h2>
+        <div class="section-block">
+          <h2>About</h2>
+          <p class="bio">{{ member.bio || 'No bio added yet.' }}</p>
+        </div>
+
+        <div class="section-block">
+          <h2>Skills</h2>
+          @if (member.skills.length > 0) {
             <mat-chip-set aria-label="Skills">
               @for (skill of member.skills; track skill) {
                 <mat-chip>{{ skill }}</mat-chip>
               }
             </mat-chip-set>
-          </div>
-        }
+          } @else {
+            <p class="empty-value">No skills added yet.</p>
+          }
+        </div>
       </mat-card-content>
     </mat-card>
   }

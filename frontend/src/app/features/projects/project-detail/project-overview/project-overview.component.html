@@ -150,17 +150,21 @@
           <ul class="member-list">
             @for (member of project.members; track member.user.id) {
               <li>
-                <app-user-avatar
-                  [name]="member.user.name"
-                  [avatar]="member.user.avatar"
-                  size="sm"
-                />
-                <div class="member-copy">
-                  <a class="member-link" [routerLink]="['/users', member.user.id]">
-                    {{ member.user.name }}
-                  </a>
-                  <span>{{ member.user.email }}</span>
-                </div>
+                <a
+                  class="member-profile-link"
+                  [routerLink]="['/users', member.user.id]"
+                  [attr.aria-label]="'View ' + member.user.name + ' profile'"
+                >
+                  <app-user-avatar
+                    [name]="member.user.name"
+                    [avatar]="member.user.avatar"
+                    size="sm"
+                  />
+                  <span class="member-copy">
+                    <strong>{{ member.user.name }}</strong>
+                    <span>{{ member.user.email }}</span>
+                  </span>
+                </a>
                 <span class="member-role">{{ roleLabels[member.role] }}</span>
                 @if (member.user.id === project.client.id) {
                   <span class="owner-chip">Client owner</span>

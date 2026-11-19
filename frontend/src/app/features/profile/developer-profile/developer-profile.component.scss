@@ -92,6 +92,38 @@
   white-space: pre-line;
 }
 
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1.5rem;
+  margin: 0;
+
+  dt {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  dd {
+    margin: 0.2rem 0 0;
+    word-break: break-word;
+
+    a {
+      color: var(--mat-sys-primary);
+    }
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.empty-value {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.9rem;
+}
+
 @media (max-width: 600px) {
   .profile-header {
     flex-direction: column;
