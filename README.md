@@ -151,8 +151,9 @@ when `NODE_ENV=production`.
 | Ishwari Kokankar | developer | `iswarikokankar@gmail.com` | `ishwari@123` |
 | Nikhil Sury | client | `nikhilsury@gmail.com` | `nikhil@123` |
 
-Seeded projects cover draft, submitted, active, on-hold and completed states.
-Requirements cover approvals, clarification requests, version history and a linked
+Seeded users include sample work profiles (job title, company, location, skills and
+social links). Seeded projects cover draft, submitted, active, on-hold and completed
+states. Requirements cover approvals, clarification requests, version history and a linked
 change request. The Playwright suite reseeds its own `devportal-e2e` database before it
 runs, so it never touches development data.
 
@@ -208,6 +209,7 @@ Developer-Portal/
 │   │   └── utils/         errors, responses, cookies, tokens
 │   ├── uploads/           private uploaded files (not committed)
 │   ├── jest.config.js
+│   ├── tsconfig.jest.json    CommonJS transform config for Jest
 │   ├── .env.example
 │   └── package.json
 ├── frontend/
@@ -279,5 +281,8 @@ full flow: client login → project → requirement → PM review → client app
 
 For a manual smoke test after seeding, sign in as each demo user and confirm that the
 client can create a project, the PM can review and assign work, the developer can update
-an assigned task, and the client can approve it. `SECURITY_REVIEW.md` documents the
-security audit, dependency-audit results and hardening decisions.
+an assigned task, and the client can approve it. To check the profile flow, open
+**Profile** as a developer, upload a PNG/JPEG picture and save work/social details, then
+sign in as another user and open a project's **Team** list to view that developer's
+profile. `SECURITY_REVIEW.md` documents the security audit, dependency-audit results and
+hardening decisions.
