@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -26,6 +19,8 @@ interface PreferenceControls {
   emailOnStatusChange: FormControl<boolean>;
   emailOnReminder: FormControl<boolean>;
 }
+
+const avatarUrlPattern = /^(https?:\/\/[^\s]+|\/api\/users\/[a-f\d]{24}\/avatar)$/i;
 
 @Component({
   selector: 'app-profile',
@@ -52,12 +47,15 @@ export class ProfileComponent implements OnInit {
   readonly avatarUploading = signal(false);
   readonly saved = signal(false);
   readonly error = signal<string | null>(null);
-  readonly avatarUrl = computed(() => this.auth.currentUser()?.avatar ?? null);
+  readonly avatarUrl = signal<string | null>(null);
 
   readonly form = new FormGroup({
     name: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.minLength(2), Validators.maxLength(80)],
+    }),
+    avatar: new FormControl<string | null>(null, {
+      validators: [Validators.pattern(avatarUrlPattern)],
     }),
     jobTitle: new FormControl<string | null>(null),
     company: new FormControl<string | null>(null),
@@ -82,8 +80,10 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
+    this.avatarUrl.set(user.avatar);
     this.form.patchValue({
       name: user.name,
+      avatar: user.avatar,
       jobTitle: user.jobTitle,
       company: user.company,
       location: user.location,
@@ -105,6 +105,7 @@ export class ProfileComponent implements OnInit {
     const raw = this.form.getRawValue();
     const payload: UpdateProfileRequest = {
       name: raw.name,
+      avatar: raw.avatar?.trim() || null,
       jobTitle: raw.jobTitle,
       company: raw.company,
       location: raw.location,
@@ -135,6 +136,11 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  onAvatarUrlInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value.trim();
+    this.avatarUrl.set(value || null);
+  }
+
   onAvatarSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -154,7 +160,9 @@ export class ProfileComponent implements OnInit {
     this.error.set(null);
 
     this.profiles.uploadAvatar(file).subscribe({
-      next: () => {
+      next: (user) => {
+        this.avatarUrl.set(user.avatar);
+        this.form.controls.avatar.setValue(user.avatar);
         this.avatarUploading.set(false);
         this.saved.set(true);
         input.value = '';

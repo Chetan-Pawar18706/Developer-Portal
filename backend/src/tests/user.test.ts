@@ -363,6 +363,41 @@ describe('profile pictures', () => {
     expect(download.body).toEqual(pngBuffer);
   });
 
+  it('accepts an external avatar URL and clears the previous stored upload', async () => {
+    const user = await createUser({ email: 'me@example.com', role: 'developer' });
+
+    await User.findByIdAndUpdate(user.id, {
+      avatar: `/api/users/${user.id}/avatar`,
+      avatarStoragePath: 'avatars/old-avatar.png',
+      avatarMimeType: 'image/png',
+    });
+    const remove = jest.spyOn(storageService, 'remove').mockResolvedValue(undefined);
+
+    const response = await request(app)
+      .patch('/api/users/me')
+      .set('Authorization', bearerToken(user))
+      .send({ avatar: 'https://cdn.example.com/profiles/raghav.png' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.user.avatar).toBe('https://cdn.example.com/profiles/raghav.png');
+    expect(remove).toHaveBeenCalledWith('avatars/old-avatar.png');
+
+    const stored = await User.findById(user.id).select('+avatarStoragePath +avatarMimeType');
+    expect(stored?.avatarStoragePath).toBeNull();
+    expect(stored?.avatarMimeType).toBeNull();
+  });
+
+  it('rejects an avatar URL that does not use http or https', async () => {
+    const user = await createUser({ email: 'me@example.com', role: 'developer' });
+
+    const response = await request(app)
+      .patch('/api/users/me')
+      .set('Authorization', bearerToken(user))
+      .send({ avatar: 'javascript:alert(1)' });
+
+    expect(response.status).toBe(422);
+  });
+
   it('rejects a non-image avatar upload', async () => {
     const user = await createUser({ email: 'me@example.com', role: 'developer' });
 

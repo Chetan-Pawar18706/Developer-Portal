@@ -1,21 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { environment } from '../../../../environments/environment';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { resolveAvatarUrl } from '../../utils/avatar-url';
 
 type AvatarSize = 'sm' | 'md' | 'lg';
-
-function resolveAvatarUrl(avatar: string | null): string | null {
-  if (!avatar) {
-    return null;
-  }
-
-  return avatar.startsWith('/api/') ? `${environment.apiUrl}${avatar.slice(4)}` : avatar;
-}
 
 @Component({
   selector: 'app-user-avatar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (avatar()) {
+    @if (showImage()) {
       <img
         class="avatar"
         [class.avatar-sm]="size() === 'sm'"
@@ -23,6 +15,8 @@ function resolveAvatarUrl(avatar: string | null): string | null {
         [class.avatar-lg]="size() === 'lg'"
         [src]="resolvedAvatar()"
         [alt]="name()"
+        (load)="failedAvatar.set(null)"
+        (error)="failedAvatar.set(avatar())"
       />
     } @else {
       <span
@@ -80,6 +74,12 @@ export class UserAvatarComponent {
   readonly size = input<AvatarSize>('md');
 
   readonly resolvedAvatar = computed(() => resolveAvatarUrl(this.avatar()));
+  readonly failedAvatar = signal<string | null>(null);
+  readonly showImage = computed(() => {
+    const avatar = this.avatar();
+
+    return !!avatar && this.failedAvatar() !== avatar;
+  });
 
   readonly initials = computed(() => {
     const parts = this.name().trim().split(/\s+/).filter(Boolean);

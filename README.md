@@ -24,9 +24,10 @@ their own projects, and internal comments/files are never returned to clients.
 
 - Authentication with 15-minute JWT access tokens and 7-day httpOnly refresh cookies,
   password reset by email, profile settings and notification preferences.
-- Developer profiles with uploaded PNG/JPEG pictures, job title, company, location,
-  skills, bio, website, GitHub and LinkedIn links; any signed-in user can view another
-  member's public profile from the project team list.
+- Developer profiles with uploaded PNG/JPEG pictures or any `http(s)` image URL, job
+  title, company, location, skills, bio, website, GitHub and LinkedIn links; any
+  signed-in user can view another member's public profile from the project team list and
+  click the picture to open a full-size viewer.
 - Project lifecycle with clients, members, priorities, budgets, dates, tags, statuses,
   delivery sign-off and PDF reports.
 - Requirement workflow: draft → submitted → under review → clarification/approved/rejected,
@@ -151,8 +152,8 @@ when `NODE_ENV=production`.
 | Ishwari Kokankar | developer | `iswarikokankar@gmail.com` | `ishwari@123` |
 | Nikhil Sury | client | `nikhilsury@gmail.com` | `nikhil@123` |
 
-Seeded users include sample work profiles (job title, company, location, skills and
-social links). Seeded projects cover draft, submitted, active, on-hold and completed
+Seeded users include realistic sample work profiles (avatar URL, job title, company,
+location, skills and social links). Seeded projects cover draft, submitted, active, on-hold and completed
 states. Requirements cover approvals, clarification requests, version history and a linked
 change request. The Playwright suite reseeds its own `devportal-e2e` database before it
 runs, so it never touches development data.
@@ -683,6 +684,7 @@ are already covered. `E2E` is the root Playwright delivery workflow.
 | TC-24 | Security | Post rich text containing `<script>`. | Stored HTML is sanitized before rendering. | Backend `security.test.ts` |
 | TC-25 | Profile | Update GitHub with a handle and LinkedIn with a full URL. | Both are accepted; links render correctly on the public profile. | Backend `user.test.ts`, Frontend `profile.service.spec.ts` |
 | TC-26 | Profile | Upload a 2 MB PNG, then a `.gif`. | PNG is stored and served; `.gif` is rejected. | Backend `user.test.ts` |
+| TC-26a | Profile | Paste an `http(s)` avatar URL, save, then open the profile as another user. | The external image is shown; the previous uploaded file is removed. Broken images fall back to initials instead of showing alt text. | Backend `user.test.ts`, Frontend `user-avatar.component.spec.ts` |
 | TC-27 | Profile | Request another user's public profile. | Work/social details are returned; email and storage paths are absent. | Backend `user.test.ts` |
 | TC-28 | Dashboards | Seed known tasks, issues and time logs, then load dashboards. | Counts, hour totals, workload and aging buckets match the fixtures. | Backend `dashboard.service.test.ts` |
 | TC-29 | Frontend | Developer navigates to a PM-only route. | `roleGuard` redirects the user away from the route. | Frontend `role.guard.spec.ts` |
@@ -697,7 +699,7 @@ are already covered. `E2E` is the root Playwright delivery workflow.
 | Backend routes | `auth.test.ts`, `user.test.ts`, `security.test.ts`, `health.test.ts`, `comment.routes.test.ts`, `file.routes.test.ts`, `issue.routes.test.ts`, `notification.routes.test.ts` | HTTP status codes, cookies, validation, role/project gates, internal visibility. |
 | Backend services | `project.service.test.ts`, `requirement.service.test.ts`, `task.service.test.ts`, `sign-off.service.test.ts`, `search.service.test.ts`, `dashboard.service.test.ts`, `storage.service.test.ts` | Business rules, aggregation, path-traversal rejection. |
 | Backend realtime | `socket.server.test.ts` | Room isolation, membership revalidation, live updates. |
-| Frontend | `app.spec.ts`, `landing.component.spec.ts`, `role.guard.spec.ts`, `auth.service.spec.ts`, `auth.interceptor.spec.ts`, `task.store.spec.ts`, `profile.service.spec.ts` | Guards, token flow, store optimistic updates, profile API. |
+| Frontend | `app.spec.ts`, `landing.component.spec.ts`, `role.guard.spec.ts`, `auth.service.spec.ts`, `auth.interceptor.spec.ts`, `task.store.spec.ts`, `profile.service.spec.ts`, `user-avatar.component.spec.ts` | Guards, token flow, store optimistic updates, profile API, avatar URL resolution and broken-image fallback. |
 | E2E | `e2e/delivery-flow.spec.ts` | Full cross-role delivery workflow against freshly seeded servers. |
 
 ## Testing
@@ -729,7 +731,7 @@ full flow: client login → project → requirement → PM review → client app
 For a manual smoke test after seeding, sign in as each demo user and confirm that the
 client can create a project, the PM can review and assign work, the developer can update
 an assigned task, and the client can approve it. To check the profile flow, open
-**Profile** as a developer, upload a PNG/JPEG picture and save work/social details, then
-sign in as another user and open a project's **Team** list to view that developer's
-profile. `SECURITY_REVIEW.md` documents the security audit, dependency-audit results and
-hardening decisions.
+**Profile** as a developer, either upload a PNG/JPEG picture or paste an `http(s)` image
+URL, then save work/social details. Sign in as another user and open a project's **Team**
+list to view that developer's profile. `SECURITY_REVIEW.md` documents the security audit,
+dependency-audit results and hardening decisions.

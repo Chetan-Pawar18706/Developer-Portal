@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  HostListener,
   OnInit,
   computed,
   inject,
@@ -23,6 +24,7 @@ import {
 } from '../../../core/models/user.model';
 import { ProfileService } from '../../../core/services/profile.service';
 import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
+import { resolveAvatarUrl } from '../../../shared/utils/avatar-url';
 import { getErrorMessage } from '../../../shared/utils/http-error';
 
 @Component({
@@ -49,8 +51,10 @@ export class DeveloperProfileComponent implements OnInit {
   readonly profile = signal<DeveloperProfile | null>(null);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly imageViewerOpen = signal(false);
   readonly roleLabels = ROLE_LABELS;
   readonly joinedAt = computed(() => this.profile()?.createdAt ?? null);
+  readonly avatarImageUrl = computed(() => resolveAvatarUrl(this.profile()?.avatar ?? null));
   readonly githubUrl = computed(() => {
     const github = this.profile()?.github;
     return github ? socialProfileUrl('github', github) : null;
@@ -59,6 +63,21 @@ export class DeveloperProfileComponent implements OnInit {
     const linkedin = this.profile()?.linkedin;
     return linkedin ? socialProfileUrl('linkedin', linkedin) : null;
   });
+
+  openImageViewer(): void {
+    if (this.avatarImageUrl()) {
+      this.imageViewerOpen.set(true);
+    }
+  }
+
+  closeImageViewer(): void {
+    this.imageViewerOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeImageViewer();
+  }
 
   ngOnInit(): void {
     this.route.paramMap
@@ -80,6 +99,7 @@ export class DeveloperProfileComponent implements OnInit {
       )
       .subscribe((profile) => {
         this.loading.set(false);
+        this.imageViewerOpen.set(false);
         this.profile.set(profile);
       });
   }

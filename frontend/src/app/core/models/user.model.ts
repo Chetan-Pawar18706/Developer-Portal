@@ -66,6 +66,7 @@ export interface RegisterRequest {
 
 export interface UpdateProfileRequest {
   name?: string;
+  avatar?: string | null;
   theme?: UserTheme;
   jobTitle?: string | null;
   company?: string | null;
@@ -83,6 +84,7 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   role: Role;
+  avatar?: string | null;
   isActive?: boolean;
 }
 

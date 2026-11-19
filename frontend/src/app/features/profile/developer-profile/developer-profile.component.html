@@ -19,7 +19,19 @@
     <mat-card appearance="outlined" class="profile-card">
       <mat-card-content>
         <div class="profile-header">
-          <app-user-avatar [name]="member.name" [avatar]="member.avatar" size="lg" />
+          @if (avatarImageUrl()) {
+            <button
+              type="button"
+              class="avatar-button"
+              [attr.aria-label]="'Enlarge profile picture of ' + member.name"
+              (click)="openImageViewer()"
+            >
+              <app-user-avatar [name]="member.name" [avatar]="member.avatar" size="lg" />
+              <mat-icon class="zoom-icon">zoom_in</mat-icon>
+            </button>
+          } @else {
+            <app-user-avatar [name]="member.name" [avatar]="member.avatar" size="lg" />
+          }
           <div class="profile-identity">
             <p class="eyebrow">{{ roleLabels[member.role] }}</p>
             <h1>{{ member.name }}</h1>
@@ -115,5 +127,34 @@
         </div>
       </mat-card-content>
     </mat-card>
+  }
+
+  @if (profile(); as member) {
+    @if (imageViewerOpen() && avatarImageUrl(); as imageUrl) {
+      <div
+        class="image-viewer"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'Enlarged profile picture of ' + member.name"
+        (click)="closeImageViewer()"
+      >
+        <button
+          mat-icon-button
+          type="button"
+          class="viewer-close"
+          aria-label="Close image viewer"
+          (click)="closeImageViewer()"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+        <img
+          class="viewer-image"
+          [src]="imageUrl"
+          [alt]="member.name"
+          (click)="$event.stopPropagation()"
+        />
+        <p class="viewer-caption">Click outside the picture or press Esc to close.</p>
+      </div>
+    }
   }
 </section>
