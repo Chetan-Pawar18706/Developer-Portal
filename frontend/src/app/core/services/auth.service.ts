@@ -60,6 +60,10 @@ export class AuthService {
     );
   }
 
+  setCurrentUser(user: User): void {
+    this.currentUserSignal.set(user);
+  }
+
   updateProfile(input: UpdateProfileRequest): Observable<User> {
     return this.http
       .patch<ApiResponse<{ user: User }>>(`${this.baseUrl}/profile`, input)

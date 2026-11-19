@@ -17,11 +17,35 @@ export interface User {
   email: string;
   role: Role;
   avatar: string | null;
+  jobTitle: string | null;
+  company: string | null;
+  location: string | null;
+  bio: string | null;
+  skills: string[];
+  website: string | null;
+  github: string | null;
+  linkedin: string | null;
   isActive: boolean;
   notificationPrefs: NotificationPreferences;
   theme: UserTheme;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface DeveloperProfile {
+  id: string;
+  name: string;
+  role: Role;
+  avatar: string | null;
+  jobTitle: string | null;
+  company: string | null;
+  location: string | null;
+  bio: string | null;
+  skills: string[];
+  website: string | null;
+  github: string | null;
+  linkedin: string | null;
+  createdAt: string;
 }
 
 export interface AuthResponse {
@@ -43,6 +67,14 @@ export interface RegisterRequest {
 export interface UpdateProfileRequest {
   name?: string;
   theme?: UserTheme;
+  jobTitle?: string | null;
+  company?: string | null;
+  location?: string | null;
+  bio?: string | null;
+  skills?: string[];
+  website?: string | null;
+  github?: string | null;
+  linkedin?: string | null;
   notificationPrefs?: Partial<NotificationPreferences>;
 }
 
@@ -70,3 +102,13 @@ export const ROLE_LABELS: Record<Role, string> = {
   developer: 'Developer',
   client: 'Client',
 };
+
+export function socialProfileUrl(platform: 'github' | 'linkedin', value: string): string {
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  return platform === 'github'
+    ? `https://github.com/${value}`
+    : `https://www.linkedin.com/in/${value}`;
+}

@@ -24,6 +24,9 @@ their own projects, and internal comments/files are never returned to clients.
 
 - Authentication with 15-minute JWT access tokens and 7-day httpOnly refresh cookies,
   password reset by email, profile settings and notification preferences.
+- Developer profiles with uploaded PNG/JPEG pictures, job title, company, location,
+  skills, bio, website, GitHub and LinkedIn links; any signed-in user can view another
+  member's public profile from the project team list.
 - Project lifecycle with clients, members, priorities, budgets, dates, tags, statuses,
   delivery sign-off and PDF reports.
 - Requirement workflow: draft → submitted → under review → clarification/approved/rejected,
@@ -227,14 +230,14 @@ All endpoints are mounted under `/api`. Success responses use
 `{ "success": true, "data": ..., "message": ... }`; list responses use
 `{ data, total, page, limit }` inside `data`. Errors use the same envelope with
 `success: false`. Query parameters support pagination, sorting and filtering. Requests
-require a Bearer access token except the public auth and health routes; the refresh
-cookie is sent automatically with `credentials: include`.
+require a Bearer access token except the public auth, health and stored-avatar routes;
+the refresh cookie is sent automatically with `credentials: include`.
 
 | Area | Endpoints |
 | --- | --- |
 | Health | `GET /api/health` |
 | Auth | `POST /api/auth/register`, `/login`, `/refresh`, `/logout`, `/forgot-password`, `/reset-password`; `GET /api/auth/me`; `PATCH /api/auth/profile` |
-| Users | `GET /api/users`, `GET /api/users/lookup`; `POST /api/users`; `PATCH /api/users/me`, `/api/users/me/password`, `/api/users/:id/role`, `/api/users/:id/status` |
+| Users | `GET /api/users`, `GET /api/users/lookup`, `GET /api/users/:id/profile`, `GET /api/users/:id/avatar` (public image); `POST /api/users`; `PATCH /api/users/me`, `/api/users/me/avatar`, `/api/users/me/password`, `/api/users/:id/role`, `/api/users/:id/status` |
 | Projects | `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/:id`, `PATCH /api/projects/:id/status`, `PATCH /api/projects/:id/sign-off`, `POST/DELETE /api/projects/:id/members`, `GET /api/projects/:id/activity`, `GET /api/projects/:id/report.pdf` |
 | Requirements | `GET /api/requirements`, `GET /api/projects/:id/requirements`, `POST /api/projects/:id/requirements`, `GET/PATCH /api/requirements/:id`, `PATCH /api/requirements/:id/status`, `POST /api/requirements/:id/change-request`, `GET /api/requirements/:id/progress` |
 | Tasks | `GET /api/tasks`, `GET /api/projects/:id/tasks`, `POST /api/projects/:id/tasks`, `GET/PATCH/DELETE /api/tasks/:id`, `PATCH /api/tasks/:id/move`, `POST /api/tasks/:id/time-logs`, `PATCH /api/tasks/:id/subtasks`, `POST /api/tasks/:id/client-review` |

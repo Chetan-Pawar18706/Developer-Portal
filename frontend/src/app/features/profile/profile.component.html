@@ -2,7 +2,9 @@
   <header class="page-header">
     <p class="eyebrow">Personal settings</p>
     <h1>Profile</h1>
-    <p class="subtitle">Update your display name and choose which updates reach your inbox.</p>
+    <p class="subtitle">
+      Manage your profile picture, work details, social links, and notification preferences.
+    </p>
   </header>
 
   @if (error(); as errorMessage) {
@@ -26,17 +28,112 @@
 
     <mat-card appearance="outlined" class="settings-card">
       <mat-card-header>
+        <mat-card-title>Profile picture</mat-card-title>
+        <mat-card-subtitle>PNG or JPEG, up to 2 MB. Teammates will see this image.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="avatar-row">
+          <app-user-avatar
+            [name]="form.controls.name.value || 'You'"
+            [avatar]="avatarUrl()"
+            size="lg"
+          />
+          <div class="avatar-actions">
+            <input
+              #avatarInput
+              type="file"
+              accept="image/png,image/jpeg"
+              class="avatar-input"
+              aria-label="Choose profile picture"
+              (change)="onAvatarSelected($event)"
+            />
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="avatarUploading()"
+              (click)="avatarInput.click()"
+            >
+              <mat-icon>photo_camera</mat-icon>
+              {{ avatarUploading() ? 'Uploading…' : 'Choose picture' }}
+            </button>
+            <span class="avatar-hint">Uploaded pictures are saved with your profile.</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="settings-card">
+      <mat-card-header>
         <mat-card-title>Personal details</mat-card-title>
         <mat-card-subtitle>This name is shown to clients and teammates.</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        <mat-form-field appearance="outline" class="name-field">
+        <mat-form-field appearance="outline" class="field">
           <mat-label>Full name</mat-label>
           <input matInput formControlName="name" autocomplete="name" />
           @if (form.controls.name.hasError('required')) {
             <mat-error>Name is required.</mat-error>
           } @else if (form.controls.name.invalid) {
             <mat-error>Use between 2 and 80 characters.</mat-error>
+          }
+        </mat-form-field>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="settings-card">
+      <mat-card-header>
+        <mat-card-title>Work profile</mat-card-title>
+        <mat-card-subtitle>
+          Optional details that help other users understand your role and experience.
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content class="work-grid">
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Job title</mat-label>
+          <input matInput formControlName="jobTitle" placeholder="e.g. Senior Developer" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Company</mat-label>
+          <input matInput formControlName="company" placeholder="e.g. Acme Studio" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Location</mat-label>
+          <input matInput formControlName="location" placeholder="e.g. Pune, India" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Website</mat-label>
+          <input matInput formControlName="website" placeholder="https://example.com" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>GitHub</mat-label>
+          <input matInput formControlName="github" placeholder="username or https://github.com/username" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>LinkedIn</mat-label>
+          <input matInput formControlName="linkedin" placeholder="profile-url or full link" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field field-wide">
+          <mat-label>Skills</mat-label>
+          <input matInput formControlName="skills" placeholder="Angular, Node.js, MongoDB" />
+          <mat-hint>Separate skills with commas.</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field field-wide">
+          <mat-label>About</mat-label>
+          <textarea
+            matInput
+            formControlName="bio"
+            rows="4"
+            placeholder="A short introduction about your work and experience."
+          ></textarea>
+          @if (form.controls.bio.hasError('maxlength')) {
+            <mat-error>Use at most 1000 characters.</mat-error>
           }
         </mat-form-field>
       </mat-card-content>

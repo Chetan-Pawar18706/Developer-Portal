@@ -290,11 +290,23 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'users/:id',
+        data: {
+          title: 'Developer profile',
+          icon: 'person',
+          description: 'Work details and links shared by a team member.',
+        },
+        loadComponent: () =>
+          import('./features/profile/developer-profile/developer-profile.component').then(
+            (module) => module.DeveloperProfileComponent,
+          ),
+      },
+      {
         path: 'profile',
         data: {
           title: 'Profile',
           icon: 'settings',
-          description: 'Update your name and email notification preferences.',
+          description: 'Update your picture, work details, social links, and notifications.',
         },
         loadComponent: () =>
           import('./features/profile/profile.component').then(

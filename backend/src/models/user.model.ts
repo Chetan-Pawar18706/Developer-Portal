@@ -20,6 +20,16 @@ export interface UserAttributes {
   passwordHash: string;
   role: UserRole;
   avatar: string | null;
+  avatarStoragePath: string | null;
+  avatarMimeType: string | null;
+  jobTitle: string | null;
+  company: string | null;
+  location: string | null;
+  bio: string | null;
+  skills: string[];
+  website: string | null;
+  github: string | null;
+  linkedin: string | null;
   isActive: boolean;
   notificationPrefs: NotificationPreferences;
   theme: UserTheme;
@@ -77,6 +87,65 @@ const userSchema = new Schema<UserAttributes, UserModel, UserMethods>(
     avatar: {
       type: String,
       default: null,
+      maxlength: 2048,
+    },
+    avatarStoragePath: {
+      type: String,
+      default: null,
+      select: false,
+      maxlength: 1000,
+    },
+    avatarMimeType: {
+      type: String,
+      default: null,
+      select: false,
+      maxlength: 100,
+    },
+    jobTitle: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 120,
+    },
+    company: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 120,
+    },
+    location: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 120,
+    },
+    bio: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 1000,
+    },
+    skills: {
+      type: [String],
+      default: [],
+    },
+    website: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 2048,
+    },
+    github: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 200,
+    },
+    linkedin: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 200,
     },
     isActive: {
       type: Boolean,

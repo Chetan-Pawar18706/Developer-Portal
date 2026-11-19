@@ -8,6 +8,7 @@ import {
 } from '../models/user.model';
 import { ApiError } from '../utils/ApiError';
 import { toPublicUser, type PublicUser } from './auth.service';
+import { AVATAR_FOLDER, storageService } from './storage.service';
 import type {
   CreateUserInput,
   ListUsersQuery,
@@ -29,12 +30,57 @@ export interface UserLookupItem {
   avatar: string | null;
 }
 
+export interface DeveloperProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  avatar: string | null;
+  jobTitle: string | null;
+  company: string | null;
+  location: string | null;
+  bio: string | null;
+  skills: string[];
+  website: string | null;
+  github: string | null;
+  linkedin: string | null;
+  createdAt: Date;
+}
+
+export interface StoredAvatar {
+  buffer: Buffer;
+  mimeType: string;
+}
+
+function normalizeNullable(value: string | null | undefined): string | null {
+  if (value === undefined || value === null || value.trim().length === 0) {
+    return null;
+  }
+
+  return value;
+}
+
+async function clearStoredAvatar(user: UserDocument): Promise<void> {
+  if (!user.avatarStoragePath) {
+    return;
+  }
+
+  const storagePath = user.avatarStoragePath;
+  user.avatarStoragePath = null;
+  user.avatarMimeType = null;
+
+  try {
+    await storageService.remove(storagePath);
+  } catch {
+    // The avatar URL is cleared even if the old file is already missing.
+  }
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 async function findUserOrThrow(userId: string): Promise<UserDocument> {
-  const user = await User.findById(userId);
+  const user = await User.findById(userId).select('+avatarStoragePath +avatarMimeType');
 
   if (!user) {
     throw new ApiError(404, 'User not found');
@@ -137,11 +183,46 @@ export async function updateProfile(
   }
 
   if (input.avatar !== undefined) {
+    if (input.avatar !== user.avatar) {
+      await clearStoredAvatar(user);
+    }
     user.avatar = input.avatar;
   }
 
   if (input.theme !== undefined) {
     user.theme = input.theme;
+  }
+
+  if (input.jobTitle !== undefined) {
+    user.jobTitle = normalizeNullable(input.jobTitle);
+  }
+
+  if (input.company !== undefined) {
+    user.company = normalizeNullable(input.company);
+  }
+
+  if (input.location !== undefined) {
+    user.location = normalizeNullable(input.location);
+  }
+
+  if (input.bio !== undefined) {
+    user.bio = normalizeNullable(input.bio);
+  }
+
+  if (input.skills !== undefined) {
+    user.skills = input.skills;
+  }
+
+  if (input.website !== undefined) {
+    user.website = normalizeNullable(input.website);
+  }
+
+  if (input.github !== undefined) {
+    user.github = normalizeNullable(input.github);
+  }
+
+  if (input.linkedin !== undefined) {
+    user.linkedin = normalizeNullable(input.linkedin);
   }
 
   if (input.notificationPrefs) {
@@ -207,4 +288,68 @@ export async function lookupUsers(roles?: UserRole[]): Promise<UserLookupItem[]>
     role: user.role,
     avatar: user.avatar,
   }));
+}
+
+export async function getPublicProfile(userId: string): Promise<DeveloperProfile> {
+  const user = await findUserOrThrow(userId);
+
+  if (!user.isActive) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    role: user.role,
+    avatar: user.avatar,
+    jobTitle: user.jobTitle,
+    company: user.company,
+    location: user.location,
+    bio: user.bio,
+    skills: [...user.skills],
+    website: user.website,
+    github: user.github,
+    linkedin: user.linkedin,
+    createdAt: user.createdAt,
+  };
+}
+
+export async function updateAvatar(
+  userId: string,
+  file: Express.Multer.File,
+): Promise<PublicUser> {
+  const user = await findUserOrThrow(userId);
+  const previousPath = user.avatarStoragePath;
+  const stored = await storageService.save({
+    buffer: file.buffer,
+    originalName: file.originalname,
+    folder: AVATAR_FOLDER,
+  });
+
+  user.avatar = `/api/users/${user.id}/avatar`;
+  user.avatarStoragePath = stored.storagePath;
+  user.avatarMimeType = file.mimetype.toLowerCase();
+  await user.save();
+
+  if (previousPath && previousPath !== stored.storagePath) {
+    try {
+      await storageService.remove(previousPath);
+    } catch {
+      // The new avatar is already saved; an old-file cleanup failure is non-fatal.
+    }
+  }
+
+  return toPublicUser(user);
+}
+
+export async function getStoredAvatar(userId: string): Promise<StoredAvatar> {
+  const user = await findUserOrThrow(userId);
+
+  if (!user.isActive || !user.avatarStoragePath || !user.avatarMimeType) {
+    throw new ApiError(404, 'Profile picture not found');
+  }
+
+  const buffer = await storageService.read(user.avatarStoragePath);
+
+  return { buffer, mimeType: user.avatarMimeType };
 }

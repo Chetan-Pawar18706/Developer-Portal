@@ -27,6 +27,14 @@ interface SeedUser {
   email: string;
   role: UserRole;
   password: string;
+  jobTitle?: string;
+  company?: string;
+  location?: string;
+  bio?: string;
+  skills?: string[];
+  website?: string;
+  github?: string;
+  linkedin?: string;
 }
 
 interface SeedMember {
@@ -100,24 +108,50 @@ const seedUsers: readonly SeedUser[] = [
     email: 'chetanpawar18706@gmail.com',
     role: 'pm',
     password: demoPassword('SEED_PM_PASSWORD', 'Chetan@123'),
+    jobTitle: 'Project Manager',
+    company: 'DevPortal Studio',
+    location: 'Pune, India',
+    bio: 'I coordinate delivery, remove blockers and keep clients aligned with the team.',
+    skills: ['Planning', 'Delivery management', 'Stakeholder communication'],
+    linkedin: 'chetan-pawar',
   },
   {
     name: 'Raghav Shastri',
     email: 'raghavshastri@gmail.com',
     role: 'developer',
     password: demoPassword('SEED_DEVELOPER_PASSWORD', 'raghav@123'),
+    jobTitle: 'Senior Full-stack Developer',
+    company: 'DevPortal Studio',
+    location: 'Pune, India',
+    bio: 'I build Angular and Node.js features with a focus on clean APIs and reliable delivery.',
+    skills: ['Angular', 'Node.js', 'TypeScript', 'MongoDB'],
+    website: 'https://example.com/raghav',
+    github: 'raghavshastri',
+    linkedin: 'raghav-shastri',
   },
   {
     name: 'Ishwari Kokankar',
     email: 'iswarikokankar@gmail.com',
     role: 'developer',
     password: demoPassword('SEED_DEVELOPER_PASSWORD', 'ishwari@123'),
+    jobTitle: 'Frontend Developer',
+    company: 'DevPortal Studio',
+    location: 'Mumbai, India',
+    bio: 'I turn requirements into accessible, responsive Angular interfaces.',
+    skills: ['Angular', 'SCSS', 'Accessibility'],
+    github: 'ishwari-k',
   },
   {
     name: 'Nikhil Sury',
     email: 'nikhilsury@gmail.com',
     role: 'client',
     password: demoPassword('SEED_CLIENT_PASSWORD', 'nikhil@123'),
+    jobTitle: 'Product Owner',
+    company: 'Northwind Retail',
+    location: 'Bengaluru, India',
+    bio: 'I own the product vision and review delivered work with the development team.',
+    skills: ['Product strategy', 'Acceptance testing'],
+    linkedin: 'nikhil-sury',
   },
 ];
 
@@ -680,6 +714,14 @@ async function seed(): Promise<void> {
           email: user.email,
           role: user.role,
           passwordHash: await hashPassword(user.password),
+          jobTitle: user.jobTitle ?? null,
+          company: user.company ?? null,
+          location: user.location ?? null,
+          bio: user.bio ?? null,
+          skills: user.skills ?? [],
+          website: user.website ?? null,
+          github: user.github ?? null,
+          linkedin: user.linkedin ?? null,
         })),
       ),
     );

@@ -1,6 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { environment } from '../../../../environments/environment';
 
 type AvatarSize = 'sm' | 'md' | 'lg';
+
+function resolveAvatarUrl(avatar: string | null): string | null {
+  if (!avatar) {
+    return null;
+  }
+
+  return avatar.startsWith('/api/') ? `${environment.apiUrl}${avatar.slice(4)}` : avatar;
+}
 
 @Component({
   selector: 'app-user-avatar',
@@ -12,7 +21,7 @@ type AvatarSize = 'sm' | 'md' | 'lg';
         [class.avatar-sm]="size() === 'sm'"
         [class.avatar-md]="size() === 'md'"
         [class.avatar-lg]="size() === 'lg'"
-        [src]="avatar()"
+        [src]="resolvedAvatar()"
         [alt]="name()"
       />
     } @else {
@@ -69,6 +78,8 @@ export class UserAvatarComponent {
   readonly name = input.required<string>();
   readonly avatar = input<string | null>(null);
   readonly size = input<AvatarSize>('md');
+
+  readonly resolvedAvatar = computed(() => resolveAvatarUrl(this.avatar()));
 
   readonly initials = computed(() => {
     const parts = this.name().trim().split(/\s+/).filter(Boolean);

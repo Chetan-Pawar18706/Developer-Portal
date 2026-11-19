@@ -156,7 +156,9 @@
                   size="sm"
                 />
                 <div class="member-copy">
-                  <strong>{{ member.user.name }}</strong>
+                  <a class="member-link" [routerLink]="['/users', member.user.id]">
+                    {{ member.user.name }}
+                  </a>
                   <span>{{ member.user.email }}</span>
                 </div>
                 <span class="member-role">{{ roleLabels[member.role] }}</span>

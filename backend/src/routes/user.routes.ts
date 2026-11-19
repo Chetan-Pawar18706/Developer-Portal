@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import { avatarUpload } from '../config/multer';
 import * as userController from '../controllers/user.controller';
 import { allow } from '../middleware/allow';
 import { authenticate } from '../middleware/auth';
+import { uploadRateLimiter } from '../middleware/rateLimit';
 import { validate } from '../middleware/validate';
 import { asyncHandler } from '../utils/asyncHandler';
 import {
@@ -16,6 +18,12 @@ import {
 } from './user.schemas';
 
 export const userRouter = Router();
+
+userRouter.get(
+  '/:id/avatar',
+  validate({ params: userIdParamSchema }),
+  asyncHandler(userController.getAvatar),
+);
 
 userRouter.use(authenticate);
 
@@ -47,9 +55,22 @@ userRouter.patch(
 );
 
 userRouter.patch(
+  '/me/avatar',
+  uploadRateLimiter,
+  avatarUpload.single('avatar'),
+  asyncHandler(userController.uploadAvatar),
+);
+
+userRouter.patch(
   '/me/password',
   validate({ body: changePasswordSchema }),
   asyncHandler(userController.updateMyPassword),
+);
+
+userRouter.get(
+  '/:id/profile',
+  validate({ params: userIdParamSchema }),
+  asyncHandler(userController.getProfile),
 );
 
 userRouter.patch(

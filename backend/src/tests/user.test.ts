@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { app } from '../app';
 import { User } from '../models/user.model';
+import { storageService } from '../services/storage.service';
 import { bearerToken, createUser, defaultPassword } from './factories';
 import { clearTestDatabase, startTestDatabase, stopTestDatabase } from './test-db';
 
@@ -13,6 +14,7 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
+  jest.restoreAllMocks();
   await clearTestDatabase();
 });
 
@@ -244,6 +246,135 @@ describe('PATCH /api/users/me', () => {
       .send({});
 
     expect(response.status).toBe(422);
+  });
+});
+
+describe('profile details', () => {
+  it('updates work, skills and social profile fields', async () => {
+    const user = await createUser({ email: 'me@example.com', role: 'developer' });
+
+    const response = await request(app)
+      .patch('/api/users/me')
+      .set('Authorization', bearerToken(user))
+      .send({
+        name: 'Raghav Shastri',
+        jobTitle: 'Senior Full-stack Developer',
+        company: 'Dev Portal',
+        location: 'Pune, India',
+        bio: 'I build reliable client-facing products.',
+        skills: ['Angular', 'Node.js', 'Angular'],
+        website: 'https://example.com',
+        github: 'raghavshastri',
+        linkedin: 'https://www.linkedin.com/in/raghavshastri',
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.user).toMatchObject({
+      name: 'Raghav Shastri',
+      jobTitle: 'Senior Full-stack Developer',
+      company: 'Dev Portal',
+      location: 'Pune, India',
+      website: 'https://example.com',
+      github: 'raghavshastri',
+      linkedin: 'https://www.linkedin.com/in/raghavshastri',
+    });
+    expect(response.body.data.user.skills).toEqual(['Angular', 'Node.js']);
+
+    const storedUser = await User.findById(user.id);
+    expect(storedUser?.skills).toEqual(['Angular', 'Node.js']);
+  });
+
+  it('rejects unsafe social links', async () => {
+    const user = await createUser({ email: 'me@example.com', role: 'developer' });
+
+    const response = await request(app)
+      .patch('/api/users/me')
+      .set('Authorization', bearerToken(user))
+      .send({ github: 'javascript:alert(1)' });
+
+    expect(response.status).toBe(422);
+  });
+
+  it('lets another authenticated user view a public developer profile', async () => {
+    const viewer = await createUser({ email: 'viewer@example.com', role: 'client' });
+    const developer = await createUser({ email: 'developer@example.com', role: 'developer' });
+
+    await request(app)
+      .patch('/api/users/me')
+      .set('Authorization', bearerToken(developer))
+      .send({
+        jobTitle: 'Backend Developer',
+        skills: ['MongoDB'],
+        github: 'dev-user',
+      });
+
+    const response = await request(app)
+      .get(`/api/users/${developer.id}/profile`)
+      .set('Authorization', bearerToken(viewer));
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.profile).toMatchObject({
+      id: developer.id,
+      name: developer.name,
+      role: 'developer',
+      jobTitle: 'Backend Developer',
+      skills: ['MongoDB'],
+      github: 'dev-user',
+    });
+    expect(response.body.data.profile.email).toBeUndefined();
+    expect(response.body.data.profile.bio).toBeNull();
+  });
+
+  it('returns 401 when an anonymous user requests a developer profile', async () => {
+    const developer = await createUser({ email: 'developer@example.com', role: 'developer' });
+
+    const response = await request(app).get(`/api/users/${developer.id}/profile`);
+
+    expect(response.status).toBe(401);
+  });
+});
+
+describe('profile pictures', () => {
+  const pngBuffer = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+
+  it('uploads an avatar and serves it publicly', async () => {
+    const user = await createUser({ email: 'me@example.com', role: 'developer' });
+    jest.spyOn(storageService, 'save').mockResolvedValue({
+      storagePath: 'avatars/test-avatar.png',
+      size: pngBuffer.length,
+    });
+    jest.spyOn(storageService, 'read').mockResolvedValue(pngBuffer);
+
+    const upload = await request(app)
+      .patch('/api/users/me/avatar')
+      .set('Authorization', bearerToken(user))
+      .attach('avatar', pngBuffer, { filename: 'avatar.png', contentType: 'image/png' });
+
+    expect(upload.status).toBe(200);
+    expect(upload.body.data.user.avatar).toBe(`/api/users/${user.id}/avatar`);
+
+    const download = await request(app).get(`/api/users/${user.id}/avatar`);
+
+    expect(download.status).toBe(200);
+    expect(download.headers['content-type']).toContain('image/png');
+    expect(download.body).toEqual(pngBuffer);
+  });
+
+  it('rejects a non-image avatar upload', async () => {
+    const user = await createUser({ email: 'me@example.com', role: 'developer' });
+
+    const upload = await request(app)
+      .patch('/api/users/me/avatar')
+      .set('Authorization', bearerToken(user))
+      .attach('avatar', Buffer.from('not an image'), {
+        filename: 'avatar.txt',
+        contentType: 'text/plain',
+      });
+
+    expect(upload.status).toBe(415);
   });
 });
 

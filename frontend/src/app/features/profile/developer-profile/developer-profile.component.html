@@ -1,0 +1,88 @@
+<section class="developer-profile-page">
+  <a mat-button routerLink="/dashboard" class="back-link">
+    <mat-icon>arrow_back</mat-icon>
+    Back to dashboard
+  </a>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (error(); as errorMessage) {
+    <div class="error-banner" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+  }
+
+  @if (profile(); as member) {
+    <mat-card appearance="outlined" class="profile-card">
+      <mat-card-content>
+        <div class="profile-header">
+          <app-user-avatar [name]="member.name" [avatar]="member.avatar" size="lg" />
+          <div class="profile-identity">
+            <p class="eyebrow">{{ roleLabels[member.role] }}</p>
+            <h1>{{ member.name }}</h1>
+            @if (member.jobTitle) {
+              <p class="headline">{{ member.jobTitle }}</p>
+            }
+            @if (member.company) {
+              <p class="organization">
+                <mat-icon>business</mat-icon>
+                {{ member.company }}
+              </p>
+            }
+            @if (member.location) {
+              <p class="organization">
+                <mat-icon>place</mat-icon>
+                {{ member.location }}
+              </p>
+            }
+            @if (joinedAt(); as joined) {
+              <p class="joined">Member since {{ joined | date: 'MMM yyyy' }}</p>
+            }
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          @if (githubUrl(); as url) {
+            <a mat-stroked-button [href]="url" target="_blank" rel="noopener noreferrer">
+              <mat-icon>code</mat-icon>
+              GitHub
+            </a>
+          }
+          @if (linkedinUrl(); as url) {
+            <a mat-stroked-button [href]="url" target="_blank" rel="noopener noreferrer">
+              <mat-icon>work</mat-icon>
+              LinkedIn
+            </a>
+          }
+          @if (member.website) {
+            <a mat-stroked-button [href]="member.website" target="_blank" rel="noopener noreferrer">
+              <mat-icon>link</mat-icon>
+              Website
+            </a>
+          }
+        </div>
+
+        @if (member.bio) {
+          <div class="section-block">
+            <h2>About</h2>
+            <p class="bio">{{ member.bio }}</p>
+          </div>
+        }
+
+        @if (member.skills.length > 0) {
+          <div class="section-block">
+            <h2>Skills</h2>
+            <mat-chip-set aria-label="Skills">
+              @for (skill of member.skills; track skill) {
+                <mat-chip>{{ skill }}</mat-chip>
+              }
+            </mat-chip-set>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</section>

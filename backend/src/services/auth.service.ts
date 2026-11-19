@@ -3,7 +3,6 @@ import { env } from '../config/env';
 import {
   User,
   hashPassword,
-  type NotificationPreferences,
   type UserDocument,
   type UserRole,
   type UserTheme,
@@ -20,6 +19,14 @@ export interface PublicUser {
   email: string;
   role: UserRole;
   avatar: string | null;
+  jobTitle: string | null;
+  company: string | null;
+  location: string | null;
+  bio: string | null;
+  skills: string[];
+  website: string | null;
+  github: string | null;
+  linkedin: string | null;
   isActive: boolean;
   notificationPrefs: {
     emailOnAssignment: boolean;
@@ -49,12 +56,6 @@ export interface LoginInput {
   password: string;
 }
 
-export interface UpdateProfileInput {
-  name?: string;
-  notificationPrefs?: Partial<NotificationPreferences>;
-  theme?: UserTheme;
-}
-
 export function toPublicUser(user: UserDocument): PublicUser {
   return {
     id: user.id,
@@ -62,6 +63,14 @@ export function toPublicUser(user: UserDocument): PublicUser {
     email: user.email,
     role: user.role,
     avatar: user.avatar,
+    jobTitle: user.jobTitle,
+    company: user.company,
+    location: user.location,
+    bio: user.bio,
+    skills: [...user.skills],
+    website: user.website,
+    github: user.github,
+    linkedin: user.linkedin,
     isActive: user.isActive,
     notificationPrefs: {
       emailOnAssignment: user.notificationPrefs.emailOnAssignment,
@@ -219,34 +228,5 @@ export async function getCurrentUser(userId: string): Promise<PublicUser> {
     throw new ApiError(404, 'User not found');
   }
 
-  return toPublicUser(user);
-}
-
-export async function updateProfile(
-  userId: string,
-  input: UpdateProfileInput,
-): Promise<PublicUser> {
-  const user = await User.findById(userId);
-
-  if (!user || !user.isActive) {
-    throw new ApiError(404, 'User not found');
-  }
-
-  if (input.name !== undefined) {
-    user.name = input.name;
-  }
-
-  if (input.notificationPrefs) {
-    user.notificationPrefs = {
-      ...user.notificationPrefs,
-      ...input.notificationPrefs,
-    };
-  }
-
-  if (input.theme !== undefined) {
-    user.theme = input.theme;
-  }
-
-  await user.save();
   return toPublicUser(user);
 }

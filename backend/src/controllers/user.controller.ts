@@ -70,3 +70,29 @@ export async function lookupUsers(req: Request, res: Response): Promise<void> {
 
   sendSuccess(res, { users }, 'Users retrieved');
 }
+
+export async function getProfile(req: Request, res: Response): Promise<void> {
+  const profile = await userService.getPublicProfile(req.params.id);
+
+  sendSuccess(res, { profile }, 'Developer profile retrieved');
+}
+
+export async function uploadAvatar(req: Request, res: Response): Promise<void> {
+  const actor = requireActor(req);
+
+  if (!req.file) {
+    throw new ApiError(400, 'Profile picture is required');
+  }
+
+  const user = await userService.updateAvatar(actor.id, req.file);
+
+  sendSuccess(res, { user }, 'Profile picture updated');
+}
+
+export async function getAvatar(req: Request, res: Response): Promise<void> {
+  const avatar = await userService.getStoredAvatar(req.params.id);
+
+  res.setHeader('Content-Type', avatar.mimeType);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.send(avatar.buffer);
+}

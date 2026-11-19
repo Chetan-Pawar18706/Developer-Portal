@@ -1,16 +1,40 @@
 import { z } from 'zod';
 import { USER_ROLES, USER_THEMES } from '../models/user.model';
+import {
+  avatarUrlSchema,
+  nullableTextSchema,
+  skillsSchema,
+  socialProfileSchema,
+} from './common.schemas';
 
 export const userRoleSchema = z.enum(USER_ROLES);
 
 const emailSchema = z.string().trim().toLowerCase().email();
+const websiteSchema = z
+  .string()
+  .trim()
+  .url('Website must be valid')
+  .max(2048)
+  .refine((value) => /^https?:\/\//i.test(value), {
+    message: 'Website must use http or https',
+  })
+  .nullable()
+  .optional();
 
 export const createUserSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: emailSchema,
   password: z.string().min(8).max(128),
   role: userRoleSchema.default('client'),
-  avatar: z.string().trim().max(2048).nullable().optional(),
+  avatar: avatarUrlSchema.nullable().optional(),
+  jobTitle: nullableTextSchema(120),
+  company: nullableTextSchema(120),
+  location: nullableTextSchema(120),
+  bio: nullableTextSchema(1000),
+  skills: skillsSchema.optional(),
+  website: websiteSchema,
+  github: socialProfileSchema.nullable().optional(),
+  linkedin: socialProfileSchema.nullable().optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -25,8 +49,16 @@ export const updateStatusSchema = z.object({
 export const updateProfileSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
-    avatar: z.string().trim().max(2048).nullable().optional(),
+    avatar: avatarUrlSchema.nullable().optional(),
     theme: z.enum(USER_THEMES).optional(),
+    jobTitle: nullableTextSchema(120),
+    company: nullableTextSchema(120),
+    location: nullableTextSchema(120),
+    bio: nullableTextSchema(1000),
+    skills: skillsSchema.optional(),
+    website: websiteSchema,
+    github: socialProfileSchema.nullable().optional(),
+    linkedin: socialProfileSchema.nullable().optional(),
     notificationPrefs: z
       .object({
         emailOnAssignment: z.boolean().optional(),
@@ -41,6 +73,14 @@ export const updateProfileSchema = z
       value.name !== undefined ||
       value.avatar !== undefined ||
       value.theme !== undefined ||
+      value.jobTitle !== undefined ||
+      value.company !== undefined ||
+      value.location !== undefined ||
+      value.bio !== undefined ||
+      value.skills !== undefined ||
+      value.website !== undefined ||
+      value.github !== undefined ||
+      value.linkedin !== undefined ||
       value.notificationPrefs !== undefined,
     { message: 'At least one profile field is required' },
   );

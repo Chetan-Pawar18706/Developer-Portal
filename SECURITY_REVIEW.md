@@ -36,7 +36,8 @@ documents every required setting, including the new `TRUST_PROXY` seed-password 
 | Reset URL interpolated into HTML | `mail.service.ts` inserted the URL directly into HTML. | The URL is escaped with the shared `escapeHtml` helper before interpolation. |
 | Refresh tokens survived privilege changes | Role/status changes left old refresh-token hashes valid. | `user.service.ts` clears `refreshTokenHash` on role or status changes. |
 | Verbose 404 / upload errors | 404 messages echoed the request method and URL; unknown multer errors echoed raw messages. | 404 now returns a static `Route not found`; generic upload failures no longer expose internal text. |
-| No `Cache-Control` on API responses | Sensitive API responses could be cached by intermediaries. | All `/api` responses set `Cache-Control: no-store`. |
+| No `Cache-Control` on API responses | Sensitive API responses could be cached by intermediaries. | All `/api` responses set `Cache-Control: no-store`, including the public avatar byte route. |
+| Profile picture exposure | A public image URL could leak storage paths or non-image content. | Avatars are limited to 2 MB PNG/JPEG uploads, stored under a private `avatars` folder, and served only as validated image bytes with `nosniff`; storage paths and profile fields are never returned by the image route. Old files are removed when replaced. |
 | Requirement drafts shared across accounts on one browser | localStorage key was project/requirement only. | Draft key now includes the current user id, with an `anonymous` fallback. |
 | Cookie hardening | Access/refresh cookies already used httpOnly, SameSite, Secure in production and scoped paths. | Verified by an automated test; global limiter uses configurable `TRUST_PROXY` so production `Secure` cookies work behind one proxy hop. |
 | CSP / headers | Helmet enabled with default CSP and no-referrer already set. | Confirmed with `security.test.ts`; `X-Content-Type-Options: nosniff` is enforced. |
@@ -95,11 +96,13 @@ does not affect production request handling; they are tracked as follow-up work.
 - Backend route/integration tests: authentication flow and cookie flags, role gates,
   project isolation, task move ordering, internal comment/file visibility, upload
   validation (extension, size, internal flag, new-version body), sign-off rules,
-  NoSQL operator injection, mass assignment, rich-text XSS and response hardening.
+  NoSQL operator injection, mass assignment, rich-text XSS and response hardening,
+  profile field validation, public developer visibility and avatar upload/serve rules.
 - Backend unit tests: `LocalDiskStorage` path-traversal rejection.
 - Frontend unit tests: `TaskStore` loading, filtering, grouping, optimistic move with
-  rollback, realtime updates and saving states. Existing `AuthService`, `authInterceptor`
-  and `roleGuard` specs were retained and exercised.
+  rollback, realtime updates and saving states; `ProfileService` developer lookup and
+  multipart avatar upload. Existing `AuthService`, `authInterceptor` and `roleGuard`
+  specs were retained and exercised.
 - Playwright e2e: complete client → PM → developer → client delivery workflow, seeded
   with demo accounts.
 

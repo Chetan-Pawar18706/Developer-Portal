@@ -132,9 +132,19 @@
   flex-direction: column;
   min-width: 0;
 
-  strong {
+  strong,
+  .member-link {
     font-size: 0.9rem;
     font-weight: 500;
+  }
+
+  .member-link {
+    color: var(--mat-sys-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   span {

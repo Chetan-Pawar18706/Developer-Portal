@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import * as authService from '../services/auth.service';
+import * as userService from '../services/user.service';
 import type {
   ForgotPasswordInput,
   LoginInput,
@@ -81,7 +82,7 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
     throw new ApiError(401, 'Authentication required');
   }
 
-  const user = await authService.updateProfile(
+  const user = await userService.updateProfile(
     req.user.id,
     req.body as UpdateProfileInput,
   );

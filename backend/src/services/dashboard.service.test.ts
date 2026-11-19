@@ -100,7 +100,7 @@ describe('dashboard aggregation numbers', () => {
       {
         project: project._id,
         title: 'High issue',
-        description: 'Urgent',
+        description: 'Urgent problem',
         type: 'bug',
         severity: 'high',
         status: 'open',
@@ -109,7 +109,7 @@ describe('dashboard aggregation numbers', () => {
       {
         project: project._id,
         title: 'Medium issue',
-        description: 'Normal',
+        description: 'Normal question',
         type: 'question',
         severity: 'medium',
         status: 'in_progress',
@@ -176,7 +176,7 @@ describe('dashboard aggregation numbers', () => {
     await Issue.create({
       project: project._id,
       title: 'Aging issue',
-      description: 'Old',
+      description: 'Older issue',
       type: 'bug',
       severity: 'low',
       status: 'open',

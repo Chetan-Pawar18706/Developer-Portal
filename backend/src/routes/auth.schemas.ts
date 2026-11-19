@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { USER_THEMES } from '../models/user.model';
 
 const emailSchema = z.string().trim().toLowerCase().email();
 
@@ -23,29 +22,10 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
-export const updateProfileSchema = z
-  .object({
-    name: z.string().trim().min(2).max(80).optional(),
-    theme: z.enum(USER_THEMES).optional(),
-    notificationPrefs: z
-      .object({
-        emailOnAssignment: z.boolean().optional(),
-        emailOnMention: z.boolean().optional(),
-        emailOnStatusChange: z.boolean().optional(),
-        emailOnReminder: z.boolean().optional(),
-      })
-      .optional(),
-  })
-  .refine(
-    (value) =>
-      value.name !== undefined ||
-        value.theme !== undefined ||
-        value.notificationPrefs !== undefined,
-    { message: 'Provide a name, theme or notification preference to update' },
-  );
+export { updateProfileSchema } from './user.schemas';
+export type { UpdateProfileInput } from './user.schemas';
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
-export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

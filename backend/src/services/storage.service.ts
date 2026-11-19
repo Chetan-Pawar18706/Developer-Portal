@@ -7,10 +7,12 @@ import {
 } from '../models/file.model';
 import { ApiError } from '../utils/ApiError';
 
+export const AVATAR_FOLDER = 'avatars' as const;
+
 export interface SaveFileInput {
   buffer: Buffer;
   originalName: string;
-  folder: FileFolder;
+  folder: FileFolder | typeof AVATAR_FOLDER;
 }
 
 export interface StoredFile {
