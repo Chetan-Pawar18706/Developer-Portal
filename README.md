@@ -253,6 +253,453 @@ Role gates are applied in route middleware (`allow`, `authenticate`, `projectAcc
 again in services where data visibility depends on project membership. Clients never
 receive `isInternal` comments/files or internal metadata.
 
+## Role and permission matrix
+
+The backend is the source of truth. Angular guards and `*appHasRole` only mirror these
+rules in the UI.
+
+| Role | Can do | Cannot do |
+| --- | --- | --- |
+| `admin` | Everything: manage users, roles, statuses, all projects, reports and settings. | Nothing is explicitly denied; use this account only for administration. |
+| `pm` | Review/approve/reject requirements, create and assign tasks, update any task, manage project members, triage issues, write internal notes, upload internal files, view PM dashboards. | Sign off delivery (client only), change global user roles, see projects they are not a member of. |
+| `developer` | View assigned projects, update only assigned tasks, log time, update subtasks, discuss, upload non-internal/internal staff files, view developer profiles. | Create/assign tasks, review requirements, manage members, sign off delivery, edit another user's profile. |
+| `client` | Create own projects and requirements, view only own projects, approve/reject requirements and delivered tasks, raise issues, comment publicly, upload non-internal files, sign off delivery, view developer profiles. | See other clients' projects, read `isInternal` comments/files, manage members, change task assignment. |
+
+## Data flow diagram (DFD)
+
+### Level 0 — context
+
+```mermaid
+flowchart LR
+  Client[Client] -->|projects, requirements, approvals, issues| System[Developer Portal]
+  PM[Project Manager] -->|reviews, tasks, members| System
+  Developer[Developer] -->|task updates, time logs, files| System
+  Admin[Admin] -->|user and system administration| System
+  System -->|documents, logs, sessions| DB[(MongoDB)]
+  System -->|uploads and avatars| Store[(Private file store)]
+  System -->|password reset and notifications| Mail[(SMTP provider)]
+  System -->|live updates| Live[Socket.IO clients]
+```
+
+### Level 1 — major processes
+
+```mermaid
+flowchart LR
+  Actor[Authenticated actor] --> Auth[Auth + RBAC + project membership]
+  Auth --> P1[Project lifecycle]
+  Auth --> P2[Requirement review]
+  Auth --> P3[Task workspace]
+  Auth --> P4[Issue tracking]
+  Auth --> P5[Comments + files + realtime]
+  Auth --> P6[Profiles + search + dashboards]
+  P1 --> DB[(MongoDB)]
+  P2 --> DB
+  P3 --> DB
+  P4 --> DB
+  P6 --> DB
+  P5 --> FS[(Private file store)]
+  P1 --> Log[Activity log]
+  P2 --> Log
+  P3 --> Log
+  P4 --> Log
+  P2 --> Notify[Notifications + email]
+  P3 --> Notify
+  P4 --> Notify
+  DB --> Out[Role-filtered API response]
+  FS --> Out
+  Out --> Actor
+```
+
+## Entity relationship diagram (ER)
+
+```mermaid
+erDiagram
+  USER ||--o{ PROJECT : "owns as client"
+  USER }o--o{ PROJECT : "project member"
+  PROJECT ||--o{ REQUIREMENT : contains
+  PROJECT ||--o{ TASK : contains
+  PROJECT ||--o{ ISSUE : contains
+  PROJECT ||--o{ COMMENT : contains
+  PROJECT ||--o{ FILE : contains
+  PROJECT ||--o{ ACTIVITYLOG : records
+  PROJECT ||--o{ NOTIFICATION : relates_to
+  USER ||--o{ REQUIREMENT : creates
+  USER ||--o{ TASK : "reports or is assigned"
+  USER ||--o{ ISSUE : "raises or is assigned"
+  USER ||--o{ COMMENT : authors
+  USER ||--o{ FILE : uploads
+  USER ||--o{ ACTIVITYLOG : performs
+  USER ||--o{ NOTIFICATION : receives
+  REQUIREMENT ||--o{ TASK : "implemented by"
+  ISSUE |o--o| TASK : "converted to"
+
+  USER {
+    ObjectId _id PK
+    string name
+    string email UK
+    string passwordHash "bcrypt; select:false"
+    string role "admin, pm, developer, client"
+    string avatar
+    string avatarStoragePath "select:false"
+    string avatarMimeType "select:false"
+    string jobTitle
+    string company
+    string location
+    string bio
+    array skills
+    string website
+    string github
+    string linkedin
+    boolean isActive
+  }
+  PROJECT {
+    ObjectId _id PK
+    ObjectId client FK
+    string title
+    string status
+    string priority
+    array members
+    date startDate
+    date dueDate
+    number budget
+    string health
+    object deliverySignOff
+  }
+  REQUIREMENT {
+    ObjectId _id PK
+    ObjectId project FK
+    ObjectId createdBy FK
+    string title
+    string status
+    string priority
+    array acceptanceCriteria
+    array versions
+    array attachments
+    ObjectId changeRequestOf FK
+  }
+  TASK {
+    ObjectId _id PK
+    ObjectId project FK
+    ObjectId requirement FK
+    ObjectId assignee FK
+    ObjectId reporter FK
+    string title
+    string status
+    number estimateHours
+    number order
+    array subtasks
+    array timeLogs
+    object clientReview
+    ObjectId linkedIssue FK
+  }
+  ISSUE {
+    ObjectId _id PK
+    ObjectId project FK
+    ObjectId raisedBy FK
+    ObjectId assignedTo FK
+    string title
+    string type
+    string severity
+    string status
+    ObjectId linkedTask FK
+  }
+  COMMENT {
+    ObjectId _id PK
+    ObjectId project FK
+    string entityType
+    ObjectId entityId
+    ObjectId author FK
+    string text
+    boolean isInternal
+    array reactions
+    array fileIds
+  }
+  FILE {
+    ObjectId _id PK
+    ObjectId project FK
+    ObjectId uploadedBy FK
+    string originalName
+    string mimeType
+    number size
+    string storagePath
+    string folder
+    boolean isInternal
+    number version
+  }
+  NOTIFICATION {
+    ObjectId _id PK
+    ObjectId user FK
+    ObjectId project FK
+    string type
+    string message
+    string link
+    boolean isRead
+  }
+  ACTIVITYLOG {
+    ObjectId _id PK
+    ObjectId project FK
+    ObjectId actor FK
+    string action
+    string entityType
+    ObjectId entityId
+    object meta
+  }
+```
+
+## Data dictionary
+
+MongoDB collections use an `ObjectId _id` primary key. Every collection except
+`ActivityLog` also stores `createdAt` and `updatedAt` timestamps; `ActivityLog` stores
+only `createdAt`. Fields marked `select:false` are never returned by normal API queries.
+
+### `users`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `name` | string | required, 2–80 chars | Display name. |
+| `email` | string | required, unique, lowercase | Login identifier. |
+| `passwordHash` | string | required, `select:false` | bcrypt hash (12 rounds). |
+| `role` | enum | required, default `client` | `admin`, `pm`, `developer`, `client`. |
+| `avatar` | string/null | default `null` | Public image URL or `/api/users/:id/avatar`. |
+| `avatarStoragePath` | string/null | default `null`, `select:false` | Private disk path for uploaded avatar. |
+| `avatarMimeType` | string/null | default `null`, `select:false` | Stored MIME type (`image/png` or `image/jpeg`). |
+| `jobTitle` | string/null | default `null` | Profile job title. |
+| `company` | string/null | default `null` | Profile company. |
+| `location` | string/null | default `null` | Profile location. |
+| `bio` | string/null | default `null`, max 1000 | Developer biography. |
+| `skills` | string[] | default `[]` | Skill chips shown on public profile. |
+| `website` | string/null | default `null` | Personal website URL. |
+| `github` | string/null | default `null` | GitHub handle or `http(s)` URL. |
+| `linkedin` | string/null | default `null` | LinkedIn handle or `http(s)` URL. |
+| `isActive` | boolean | default `true` | Deactivated users cannot authenticate. |
+| `notificationPrefs` | object | default all `true` | `emailOnAssignment`, `emailOnMention`, `emailOnStatusChange`, `emailOnReminder`. |
+| `theme` | enum | required, default `light` | `light` or `dark`. |
+| `resetTokenHash` | string/null | default `null`, `select:false` | Hashed password-reset token. |
+| `resetTokenExpires` | date/null | default `null`, `select:false` | Reset token expiry. |
+| `refreshTokenHash` | string/null | default `null`, `select:false` | Hashed refresh token cookie. |
+
+### `projects`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `title` | string | required, 3–120 chars | Project name. |
+| `description` | string | required, 10–5000 chars | Project brief. |
+| `client` | ObjectId → `users` | required | Owning client. |
+| `status` | enum | required, default `draft` | `draft`, `submitted`, `in_review`, `active`, `on_hold`, `completed`, `archived`. |
+| `priority` | enum | required, default `medium` | `low`, `medium`, `high`, `critical`. |
+| `members` | array | default `[]` | `{ user: ObjectId, role: UserRole }` entries. |
+| `startDate` | date/null | default `null` | Planned start. |
+| `dueDate` | date/null | default `null` | Planned delivery date. |
+| `tags` | string[] | default `[]` | Searchable labels. |
+| `budget` | number | default `0`, min 0 | Project budget. |
+| `health` | enum | required, default `on_track` | `on_track`, `at_risk`, `off_track`. |
+| `deliverySignOff` | object | default empty | `signedBy`, `signedAt`, `note`, `rating` (1–5), `feedback`. |
+
+### `requirements`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `project` | ObjectId → `projects` | required | Parent project. |
+| `title` | string | required, 3–160 chars | Requirement title. |
+| `description` | string | required, max 20 000 | Full requirement text. |
+| `acceptanceCriteria` | string[] | default `[]` | Acceptance checklist. |
+| `priority` | enum | required, default `should` | `must`, `should`, `could`, `wont`. |
+| `type` | enum | required, default `functional` | `functional`, `non_functional`. |
+| `status` | enum | required, default `draft` | `draft`, `submitted`, `under_review`, `clarification`, `approved`, `rejected`. |
+| `versions` | array | default `[]` | `{ title, description, editedBy, editedAt }` history. |
+| `attachments` | array | default `[]` | `{ name, url, mimeType, size, uploadedBy, uploadedAt }`. |
+| `fileIds` | ObjectId[] → `files` | default `[]` | Linked project files. |
+| `createdBy` | ObjectId → `users` | required | Usually the client. |
+| `reviewNote` | string | default `''`, max 2000 | PM review feedback. |
+| `changeRequestOf` | ObjectId/null → `requirements` | default `null` | Links a change request to an approved requirement. |
+
+### `tasks`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `project` | ObjectId → `projects` | required | Parent project. |
+| `requirement` | ObjectId/null → `requirements` | default `null` | Source requirement. |
+| `title` | string | required, 3–160 chars | Task title. |
+| `description` | string | default `''`, max 20 000 | Task details. |
+| `assignee` | ObjectId/null → `users` | default `null` | Assigned developer. |
+| `reporter` | ObjectId → `users` | required | Task creator. |
+| `status` | enum | required, default `todo` | `todo`, `in_progress`, `in_review`, `blocked`, `done`. |
+| `priority` | enum | required, default `medium` | `low`, `medium`, `high`, `critical`. |
+| `estimateHours` | number | default `0`, 0–10 000 | Original estimate. |
+| `dueDate` | date/null | default `null` | Task deadline. |
+| `labels` | string[] | default `[]` | Task labels. |
+| `order` | number | required, default `0`, min 0 | Board/list ordering. |
+| `subtasks` | array | default `[]` | `{ title, done }` checklist. |
+| `timeLogs` | array | default `[]` | `{ user, hours (0.25–24), note, date }`. |
+| `clientReview` | object | default pending | `{ status, note, by, at }`; status is `pending`, `approved`, or `changes_requested`. |
+| `linkedIssue` | ObjectId/null → `issues` | default `null` | Issue converted into this task. |
+
+### `issues`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `project` | ObjectId → `projects` | required | Parent project. |
+| `title` | string | required, 3–160 chars | Issue title. |
+| `description` | string | required, 10–20 000 chars | Issue detail. |
+| `type` | enum | required, default `bug` | `bug`, `question`, `change_request`, `feedback`. |
+| `severity` | enum | required, default `medium` | `low`, `medium`, `high`, `critical`. |
+| `status` | enum | required, default `open` | `open`, `in_discussion`, `in_progress`, `resolved`, `closed`, `reopened`. |
+| `stepsToReproduce` | string | default `''`, max 10 000 | Reproduction steps. |
+| `raisedBy` | ObjectId → `users` | required | Reporter. |
+| `assignedTo` | ObjectId/null → `users` | default `null` | Assignee; PM auto-assigned on creation. |
+| `attachments` | array | default `[]` | `{ name, url, mimeType, size }`. |
+| `fileIds` | ObjectId[] → `files` | default `[]` | Linked project files. |
+| `linkedTask` | ObjectId/null → `tasks` | default `null` | Task created from this issue. |
+
+### `comments`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `project` | ObjectId → `projects` | required | Parent project. |
+| `entityType` | enum | required | `project`, `requirement`, `task`, `issue`. |
+| `entityId` | ObjectId | required | Polymorphic target document. |
+| `author` | ObjectId → `users` | required | Comment author. |
+| `text` | string | required, max 10 000 | Sanitized rich-text body. |
+| `mentions` | ObjectId[] → `users` | default `[]` | Mentioned users. |
+| `parent` | ObjectId/null → `comments` | default `null` | Thread parent. |
+| `isInternal` | boolean | default `false` | Internal staff note; hidden from clients. |
+| `reactions` | array | default `[]` | `{ emoji, users[] }`. |
+| `attachments` | array | default `[]` | `{ name, url, mimeType, size }`. |
+| `fileIds` | ObjectId[] → `files` | default `[]` | Linked project files. |
+| `editedAt` | date/null | default `null` | Last edit timestamp. |
+
+### `files`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `project` | ObjectId → `projects` | required | Parent project. |
+| `name` | string | required, max 300 | Stored file name. |
+| `originalName` | string | required, max 300 | Uploaded file name. |
+| `mimeType` | string | required, max 120 | Must be an allowed MIME type. |
+| `size` | number | required, ≤ 25 MB | File size in bytes. |
+| `storagePath` | string | required, max 1000 | Private disk path. |
+| `folder` | enum | required, default `other` | `requirements`, `designs`, `deliverables`, `contracts`, `other`. |
+| `uploadedBy` | ObjectId → `users` | required | Uploader. |
+| `isInternal` | boolean | required, default `false` | Internal file; hidden from clients. |
+| `version` | number | required, default `1`, min 1 | Current version number. |
+| `versions` | array | default `[]` | `{ storagePath, size, uploadedBy, uploadedAt }` history. |
+
+### `notifications`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `user` | ObjectId → `users` | required | Recipient. |
+| `project` | ObjectId → `projects` | required | Related project. |
+| `type` | enum | required | `task_assigned`, `mention`, `requirement_status_changed`, `issue_status_changed`, `task_client_review`, `project_status_changed`, `task_due_reminder`, `task_overdue`. |
+| `message` | string | required, max 500 | Notification text. |
+| `link` | string | required, max 1000 | Frontend deep link. |
+| `isRead` | boolean | required, default `false` | Read state. |
+
+### `activitylogs`
+
+| Field | Type | Required / default | Description |
+| --- | --- | --- | --- |
+| `project` | ObjectId → `projects` | required | Project whose timeline this entry belongs to. |
+| `actor` | ObjectId → `users` | required | User who performed the action. |
+| `action` | enum | required | e.g. `project_created`, `task_status_changed`, `comment_created`, `delivery_signed_off`. |
+| `entityType` | enum | required | `project`, `member`, `status`, `requirement`, `task`, `comment`, `issue`. |
+| `entityId` | ObjectId/null | default `null` | Affected document. |
+| `meta` | mixed | default `{}` | Additional non-sensitive context such as old/new status. |
+
+## Workflow states
+
+Requirements:
+
+```mermaid
+stateDiagram-v2
+  [*] --> draft
+  draft --> submitted
+  submitted --> under_review
+  under_review --> clarification
+  clarification --> submitted
+  under_review --> approved
+  under_review --> rejected
+  rejected --> draft
+  approved --> [*]
+```
+
+Tasks:
+
+```mermaid
+stateDiagram-v2
+  [*] --> todo
+  todo --> in_progress
+  in_progress --> in_review
+  in_review --> done
+  in_review --> todo
+  in_progress --> blocked
+  blocked --> in_progress
+  done --> [*]
+```
+
+Issues:
+
+```mermaid
+stateDiagram-v2
+  [*] --> open
+  open --> in_discussion
+  in_discussion --> in_progress
+  in_progress --> resolved
+  resolved --> closed
+  closed --> reopened
+  reopened --> open
+```
+
+## Test cases
+
+The following catalog maps the functional scenarios to the automated suites where they
+are already covered. `E2E` is the root Playwright delivery workflow.
+
+| ID | Area | Steps | Expected result | Coverage |
+| --- | --- | --- | --- | --- |
+| TC-01 | Auth | Log in with a valid seeded account. | `200`, access token in body, httpOnly refresh cookie, correct role. | Backend `auth.test.ts` |
+| TC-02 | Auth | Log in with a wrong password. | `401`, no access token issued. | Backend `auth.test.ts` |
+| TC-03 | Auth | Call `/refresh` with a valid refresh cookie. | New access token and rotated refresh cookie. | Backend `auth.test.ts` |
+| TC-04 | Auth | Deactivate a user, then call an authenticated route with their token. | `401`; current `isActive` is checked on every request. | Backend `security.test.ts` |
+| TC-05 | RBAC | Client calls `PATCH /api/users/:id/role`. | `403`; role changes are admin-only. | Backend `security.test.ts` |
+| TC-06 | Projects | Client B requests project A by id. | `403`/`404`; project membership is enforced in the service. | Backend `project.service.test.ts` |
+| TC-07 | Requirements | Client submits a draft requirement, PM approves it. | Status moves `draft → submitted → under_review → approved`; activity is logged. | Backend `requirement.service.test.ts` |
+| TC-08 | Requirements | Try to edit an approved requirement. | Edit is rejected to protect approved scope. | Backend `requirement.service.test.ts` |
+| TC-09 | Requirements | Create a change request from an approved requirement. | New requirement stores `changeRequestOf`. | Backend `requirement.service.test.ts` |
+| TC-10 | Tasks | PM creates a task and assigns a developer. | Assignee is stored; assignee receives a notification. | Backend `task.service.test.ts` |
+| TC-11 | Tasks | Developer updates an assigned task, then an unassigned one. | Assigned update succeeds; unassigned update is `403`. | Backend `task.service.test.ts` |
+| TC-12 | Tasks | Log `0.25` hours and then `0` hours. | First is accepted; second fails model validation. | Backend `task.service.test.ts` |
+| TC-13 | Tasks | Move a task in the board and simulate a failed save. | Order persists; the Angular store rolls back optimistic state. | Frontend `task.store.spec.ts` |
+| TC-14 | Tasks | Client approves a delivered task. | `clientReview.status = approved`, `by` and `at` are set. | Backend `task.service.test.ts`, E2E |
+| TC-15 | Issues | Client raises a bug; PM reviews it. | Issue is auto-assigned to the PM and status starts at `open`. | Backend `issue.routes.test.ts` |
+| TC-16 | Issues | PM converts an issue into a task. | `issue.linkedTask` and `task.linkedIssue` reference each other. | Backend `issue.routes.test.ts` |
+| TC-17 | Comments | PM writes an internal comment; client lists comments. | Internal comment is absent from the client response. | Backend `comment.routes.test.ts` |
+| TC-18 | Comments | Mention a teammate in a comment. | Mentioned user receives a notification and realtime event. | Backend `comment.routes.test.ts`, `socket.server.test.ts` |
+| TC-19 | Files | Upload `.exe` and a 26 MB PDF. | Both are rejected by extension/MIME/size validation. | Backend `file.routes.test.ts` |
+| TC-20 | Files | Upload a new version of an existing PDF. | `version` increments and previous `versions` entries remain. | Backend `file.routes.test.ts` |
+| TC-21 | Files | Mark a file internal, then list as client. | Internal file is not returned to the client. | Backend `file.routes.test.ts` |
+| TC-22 | Delivery | Client signs off a completed project with rating 4. | `deliverySignOff` stores signer, time, rating and feedback. | Backend `sign-off.service.test.ts`, E2E |
+| TC-23 | Security | Send `$where`/`$ne` operators in query parameters. | Request is rejected by Zod/mongo-sanitize validation. | Backend `security.test.ts` |
+| TC-24 | Security | Post rich text containing `<script>`. | Stored HTML is sanitized before rendering. | Backend `security.test.ts` |
+| TC-25 | Profile | Update GitHub with a handle and LinkedIn with a full URL. | Both are accepted; links render correctly on the public profile. | Backend `user.test.ts`, Frontend `profile.service.spec.ts` |
+| TC-26 | Profile | Upload a 2 MB PNG, then a `.gif`. | PNG is stored and served; `.gif` is rejected. | Backend `user.test.ts` |
+| TC-27 | Profile | Request another user's public profile. | Work/social details are returned; email and storage paths are absent. | Backend `user.test.ts` |
+| TC-28 | Dashboards | Seed known tasks, issues and time logs, then load dashboards. | Counts, hour totals, workload and aging buckets match the fixtures. | Backend `dashboard.service.test.ts` |
+| TC-29 | Frontend | Developer navigates to a PM-only route. | `roleGuard` redirects the user away from the route. | Frontend `role.guard.spec.ts` |
+| TC-30 | Search | Search projects, tasks and requirements with a common keyword. | Only documents the caller may access are returned. | Backend `search.service.test.ts` |
+| TC-31 | Notifications | Mark one notification read, then mark all read. | Read flags update and unread count decreases. | Backend `notification.routes.test.ts` |
+| TC-32 | E2E | Run the full seeded client → PM → developer → client delivery flow. | Project is delivered and signed off without manual intervention. | Root `npm run e2e` |
+
+### Automated suite inventory
+
+| Layer | Files | Focus |
+| --- | --- | --- |
+| Backend routes | `auth.test.ts`, `user.test.ts`, `security.test.ts`, `health.test.ts`, `comment.routes.test.ts`, `file.routes.test.ts`, `issue.routes.test.ts`, `notification.routes.test.ts` | HTTP status codes, cookies, validation, role/project gates, internal visibility. |
+| Backend services | `project.service.test.ts`, `requirement.service.test.ts`, `task.service.test.ts`, `sign-off.service.test.ts`, `search.service.test.ts`, `dashboard.service.test.ts`, `storage.service.test.ts` | Business rules, aggregation, path-traversal rejection. |
+| Backend realtime | `socket.server.test.ts` | Room isolation, membership revalidation, live updates. |
+| Frontend | `app.spec.ts`, `landing.component.spec.ts`, `role.guard.spec.ts`, `auth.service.spec.ts`, `auth.interceptor.spec.ts`, `task.store.spec.ts`, `profile.service.spec.ts` | Guards, token flow, store optimistic updates, profile API. |
+| E2E | `e2e/delivery-flow.spec.ts` | Full cross-role delivery workflow against freshly seeded servers. |
+
 ## Testing
 
 ```bash
